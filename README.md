@@ -23,6 +23,8 @@ downloaded symbols, local launch settings, generated packages, or credentials.
 - `docs/iwx-business-rules-compatibility.md`: compatibility boundary proving
   that neither app changes, deletes, suppresses, or reimplements Insight Works
   Product Configurator Business Rules.
+- `docs/transfer-audit.md`: source-audit result, reviewed IWX writes and
+  `IsHandled` paths, and remaining Sandbox acceptance evidence.
 - `docs/frame-specification.md` and `docs/frame-specification-test-plan.md`:
   Frame Specification data ownership, Word-layout information, and required
   Sandbox acceptance scenarios.
@@ -38,8 +40,9 @@ rules are Pneuman-owned report configuration, not IWX Business Rules.
 
 Product Configurator Enhancements can optionally map an exact Config. Template
 Item Disc. Group placeholder such as `{I_FA}` to the selected IWX Choice Code.
-It reads, but never changes, the IWX Data Template and Business Central Config.
-Template Line, and does not handle a Business Rule event.
+The mapping occurs before standard Config. Template validation. It reads, but
+never changes, the IWX Data Template and Business Central Config. Template
+Line, and does not handle a Business Rule event.
 
 ## Frame Specification template
 

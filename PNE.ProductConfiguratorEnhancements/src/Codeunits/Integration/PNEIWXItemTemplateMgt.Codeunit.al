@@ -1,15 +1,14 @@
 codeunit 50116 "PNE IWX Item Template Mgt."
 {
-    procedure ApplyConfiguredItemDiscGroup(
-        Item: Record Item;
+    SingleInstance = true;
+
+    procedure StartConfiguredItemCreation(
         ConfiguratorBOM: Record "IWX Configurator BOM v3")
     var
-        ConfigTemplateLine: Record "Config. Template Line";
         ConfiguratorItemCategory: Record "IWX Cfg Item Category v3";
-        CreatedItem: Record Item;
-        OptionCode: Code[20];
-        ChoiceCode: Code[20];
     begin
+        ClearConfiguredItemCreation();
+
         if not ConfiguratorItemCategory.Get(
             ConfiguratorBOM."Item Category Code")
         then
@@ -18,28 +17,63 @@ codeunit 50116 "PNE IWX Item Template Mgt."
         if ConfiguratorItemCategory."Data Template" = '' then
             exit;
 
-        ConfigTemplateLine.SetRange(
-            "Data Template Code",
-            ConfiguratorItemCategory."Data Template");
-        ConfigTemplateLine.SetRange("Table ID", Database::Item);
-        ConfigTemplateLine.SetRange(
-            "Field ID",
-            CreatedItem.FieldNo("Item Disc. Group"));
-        if not ConfigTemplateLine.FindFirst() then
-            exit;
+        ActiveConfigurationID := ConfiguratorBOM."Configuration ID";
+        ActiveDataTemplateCode := ConfiguratorItemCategory."Data Template";
+    end;
 
-        if not TryGetOptionCode(
-            ConfigTemplateLine."Default Value",
+    procedure ApplyItemDiscGroupPlaceholder(
+        var RecRef: RecordRef;
+        FieldRef: FieldRef;
+        ConfigTemplateLine: Record "Config. Template Line";
+        var IsHandled: Boolean)
+    var
+        OptionCode: Code[20];
+        ChoiceCode: Code[20];
+    begin
+        if not IsConfiguredItemDiscGroupPlaceholder(
+            RecRef,
+            FieldRef,
+            ConfigTemplateLine,
             OptionCode)
         then
             exit;
 
-        ChoiceCode := GetChoiceCode(ConfiguratorBOM, OptionCode);
-        if not CreatedItem.Get(Item."No.") then
-            exit;
+        ChoiceCode := GetChoiceCode(OptionCode);
+        FieldRef.Validate(ChoiceCode);
+        IsHandled := true;
+    end;
 
-        CreatedItem.Validate("Item Disc. Group", ChoiceCode);
-        CreatedItem.Modify(true);
+    procedure ClearConfiguredItemCreation()
+    begin
+        Clear(ActiveConfigurationID);
+        Clear(ActiveDataTemplateCode);
+    end;
+
+    local procedure IsConfiguredItemDiscGroupPlaceholder(
+        RecRef: RecordRef;
+        FieldRef: FieldRef;
+        ConfigTemplateLine: Record "Config. Template Line";
+        var OptionCode: Code[20]): Boolean
+    var
+        Item: Record Item;
+    begin
+        if ActiveConfigurationID = '' then
+            exit(false);
+
+        if ConfigTemplateLine."Data Template Code" <> ActiveDataTemplateCode then
+            exit(false);
+
+        if (ConfigTemplateLine."Table ID" <> Database::Item) or
+           (ConfigTemplateLine."Field ID" <> Item.FieldNo("Item Disc. Group"))
+        then
+            exit(false);
+
+        if (RecRef.Number <> Database::Item) or
+           (FieldRef.Number <> Item.FieldNo("Item Disc. Group"))
+        then
+            exit(false);
+
+        exit(TryGetOptionCode(ConfigTemplateLine."Default Value", OptionCode));
     end;
 
     local procedure TryGetOptionCode(
@@ -62,15 +96,13 @@ codeunit 50116 "PNE IWX Item Template Mgt."
             (OptionCode <> ''));
     end;
 
-    local procedure GetChoiceCode(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
-        OptionCode: Code[20]): Code[20]
+    local procedure GetChoiceCode(OptionCode: Code[20]): Code[20]
     var
         SelectedConfiguratorBOM: Record "IWX Configurator BOM v3";
     begin
         SelectedConfiguratorBOM.SetRange(
             "Configuration ID",
-            ConfiguratorBOM."Configuration ID");
+            ActiveConfigurationID);
         SelectedConfiguratorBOM.SetRange(
             "Configuration Option",
             OptionCode);
@@ -79,4 +111,8 @@ codeunit 50116 "PNE IWX Item Template Mgt."
 
         exit(SelectedConfiguratorBOM."Choice Code");
     end;
+
+    var
+        ActiveConfigurationID: Code[20];
+        ActiveDataTemplateCode: Code[10];
 }

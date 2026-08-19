@@ -152,8 +152,9 @@ Price when no profit group is selected.
 ## Configured Item Template default scenarios
 
 - **Choice Code mapping:** an Item category with a Data Template whose Item
-  Disc. Group Default Value is `{I_FA}` creates an Item with the selected
-  `I_FA` Choice Code as Item Disc. Group.
+  Disc. Group Default Value is `{I_FA}` replaces the placeholder before
+  standard validation and creates an Item with the selected `I_FA` Choice Code
+  as Item Disc. Group.
 - **Blank choice:** a blank or missing `I_FA` selection creates the Item with a
   blank Item Disc. Group rather than retaining the literal placeholder.
 - **No placeholder:** a literal Item Disc. Group Default Value retains standard

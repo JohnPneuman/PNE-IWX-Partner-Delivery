@@ -167,7 +167,9 @@ the selected `I_FA` Choice Code. A missing or blank choice explicitly clears
 the new Item's Item Disc. Group. Other template fields and values are left to
 standard IWX and Business Central template processing.
 
-The mapping runs after IWX Item creation through its public event and validates
-the Item field before modifying it. It does not change the Config. Template,
-IWX configuration, or IWX Business Rules. No `Commit()` is used, so an invalid
-Choice Code fails and rolls back the surrounding Item-creation transaction.
+The mapping starts through IWX's public pre-creation event and substitutes the
+value through Business Central's standard Config. Template validation event.
+It does not change the Config. Template, IWX configuration, or IWX Business
+Rules. It validates the active template `FieldRef` without retrieving the
+not-yet-inserted Item. No `Commit()` is used, so an invalid Choice Code fails
+and rolls back the surrounding Item-creation transaction.

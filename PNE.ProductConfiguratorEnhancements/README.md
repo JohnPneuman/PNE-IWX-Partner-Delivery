@@ -1,9 +1,9 @@
 # PNE Product Configurator Enhancements
 
 This is the installable Business Central AL app in this repository. It extends
-Insight Works Product Configurator in four specific areas: Production BOM
+Insight Works Product Configurator in five specific areas: Production BOM
 Additional Choices, missing Non-Inventory BOM cost, Blue Ace profit-group
-pricing, and configuration-derived Item numbers and sales text.
+pricing, configuration-derived Item Disc. Group defaults, and sales text.
 
 For an installation and configuration handover, use the repository-level
 [partner installation guide](../../docs/partner-installation-guide.md) and
@@ -64,9 +64,10 @@ normalization, length, and uniqueness behavior remain under IWX control.
 For an IWX Item Category with a Data Template, an Item Disc. Group Config.
 Template Line can use an exact placeholder such as `{I_FA}` as its Default
 Value. When IWX creates the Item, the app replaces it with the selected `I_FA`
-Choice Code. A blank or missing choice clears Item Disc. Group. Literal default
-values and all fields other than Item Disc. Group retain standard IWX and
-Business Central template behavior.
+Choice Code before standard Config. Template validation. A blank or missing
+choice clears Item Disc. Group. Literal default values and all fields other
+than Item Disc. Group retain standard IWX and Business Central template
+behavior.
 
 ## Configured Sales Line extended text
 

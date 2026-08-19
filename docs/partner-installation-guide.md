@@ -4,12 +4,13 @@
 
 This guide is for Blu Ace when assessing, packaging, installing, and accepting
 the extension in the Pneuman master. The app is a private per-tenant extension
-that augments Insight Works Product Configurator in four narrowly scoped areas:
+that augments Insight Works Product Configurator in five narrowly scoped areas:
 
 1. selection of Production BOMs as IWX Additional Choices;
 2. addition of missing Non-Inventory cost to an IWX Production BOM choice;
 3. price calculation from the Blue Ace Item Profit Group; and
-4. Smart Item Number Option Text and configured Sales Line extended text.
+4. Smart Item Number Option Text and configured Sales Line extended text; and
+5. Item Disc. Group defaults sourced from a selected configurator Choice Code.
 
 It is not a replacement for IWX configuration, Production BOM maintenance,
 Blue Ace price-group maintenance, or Business Central extended-text setup.
@@ -113,6 +114,18 @@ This feature runs during the standard Business Central extended-text insertion
 for a Sales Line linked to an IWX configuration. It does not change Item
 extended-text master data.
 
+### Configured Item Template default
+
+For an IWX Item Category with a standard Business Central Data Template, set
+the Item Disc. Group template line's **Default Value** to an exact placeholder
+such as `{I_FA}`. During Item creation, the app replaces it with the selected
+Choice Code for configurator option `I_FA` before standard template validation.
+Any top-level configurator Option Code can be used in the same way, for example
+`{I_DISC}`. A blank or missing selection leaves Item Disc. Group blank.
+
+This placeholder applies only to Item Disc. Group. A literal Default Value and
+all other template fields retain standard Business Central and IWX behavior.
+
 ## Acceptance criteria
 
 At minimum, test the following in Sandbox:
@@ -127,7 +140,9 @@ At minimum, test the following in Sandbox:
   standard IWX component types; and
 - manual and automatic extended-text insertion, nested quantities, display
   ordering, NLD/date filters, mixed IWX/custom text, and circular child
-  configuration handling.
+  configuration handling; and
+- an Item created with `{I_FA}`, a blank/missing choice, a literal Item Disc.
+  Group Default Value, and an invalid Choice Code that rolls back creation.
 
 The full expected results are in [test-plan.md](test-plan.md). Retain the
 executed evidence with the release decision.

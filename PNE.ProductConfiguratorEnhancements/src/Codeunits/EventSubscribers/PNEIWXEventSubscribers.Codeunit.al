@@ -213,19 +213,59 @@ codeunit 50101 "PNE IWX Event Subscribers"
     [EventSubscriber(
         ObjectType::Codeunit,
         Codeunit::"IWX Configurator Mgmt.",
+        OnBeforeCreateItemWithConfiguratorBOM,
+        '',
+        false,
+        false)]
+    local procedure StartConfiguredItemTemplateDefaults(
+        precItem: Record Item;
+        var precIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        var pbIsHandled: Boolean)
+    var
+        IWXItemTemplateMgt: Codeunit "PNE IWX Item Template Mgt.";
+    begin
+        IWXItemTemplateMgt.StartConfiguredItemCreation(
+            precIWXConfiguratorBOMv3);
+    end;
+
+    [EventSubscriber(
+        ObjectType::Codeunit,
+        Codeunit::"Config. Template Management",
+        OnInsertTemplateBeforeValidateFieldValue,
+        '',
+        false,
+        false)]
+    local procedure ApplyConfiguredItemTemplatePlaceholder(
+        var RecRef: RecordRef;
+        FieldRef: FieldRef;
+        Value: Text[2048];
+        LanguageID: Integer;
+        var IsHandled: Boolean;
+        ConfigTemplateLine: Record "Config. Template Line")
+    var
+        IWXItemTemplateMgt: Codeunit "PNE IWX Item Template Mgt.";
+    begin
+        IWXItemTemplateMgt.ApplyItemDiscGroupPlaceholder(
+            RecRef,
+            FieldRef,
+            ConfigTemplateLine,
+            IsHandled);
+    end;
+
+    [EventSubscriber(
+        ObjectType::Codeunit,
+        Codeunit::"IWX Configurator Mgmt.",
         OnAfterCreateItemWithConfiguratorBOM,
         '',
         false,
         false)]
-    local procedure ApplyConfiguredItemTemplateDefaults(
+    local procedure ClearConfiguredItemTemplateDefaults(
         precItem: Record Item;
         var precIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     var
         IWXItemTemplateMgt: Codeunit "PNE IWX Item Template Mgt.";
     begin
-        IWXItemTemplateMgt.ApplyConfiguredItemDiscGroup(
-            precItem,
-            precIWXConfiguratorBOMv3);
+        IWXItemTemplateMgt.ClearConfiguredItemCreation();
     end;
 
 
