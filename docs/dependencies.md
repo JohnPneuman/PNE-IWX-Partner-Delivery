@@ -45,8 +45,11 @@ Used events and subscriber signatures:
   `var Record "Sales Line"`, `Record "Sales Header"`, `Boolean`,
   `var Boolean`, `var Boolean`, `var Boolean`, `var Boolean`.
 - Codeunit `IWX Configurator Mgmt.` event
-  `OnAfterCreateItemWithConfiguratorBOM`: `Record Item`,
-  `var Record "IWX Configurator BOM v3"`.
+  `OnBeforeCreateItemWithConfiguratorBOM`: `Record Item`,
+  `var Record "IWX Configurator BOM v3"`, `var Boolean`.
+- Codeunit `Config. Template Management` event
+  `OnInsertTemplateBeforeValidateFieldValue`: `var RecordRef`, `FieldRef`,
+  `Text[2048]`, `Integer`, `var Boolean`, `Record "Config. Template Line"`.
 
 Fields and methods used include Item Category Code, Configuration Option,
 Additional Choices Type, Additional Choices Filter, Code, Type, No.,
@@ -57,7 +60,8 @@ Quantity per Unit, Smart Item Number Type, Option Code, Option Text,
 
 The optional Item Disc. Group mapping also reads IWX Configurator Item Category
 field `Data Template` and standard `Config. Template Line` fields `Data
-Template Code`, `Table ID`, `Field ID`, and `Default Value`.
+Template Code`, `Table ID`, `Field ID`, and `Default Value`. It validates the
+resolved Choice Code through the standard Item field validation event.
 
 After an IWX upgrade, inspect the actual symbols before compiling: confirm all
 used events and `var`/temporary semantics, keys, enum values, Type/No.

@@ -122,20 +122,20 @@ text.
 An IWX Item Category can refer to a standard Business Central Data Template.
 When the Item Disc. Group line in that template has a Default Value in the
 exact form `{<Option Code>}`, the app resolves the selected Choice Code from
-the top-level configuration after IWX creates the Item. For example, `{I_FA}`
-sets Item Disc. Group to the selected `I_FA` Choice Code.
+the top-level configuration before standard Config. Template validation. For
+example, `{I_FA}` sets Item Disc. Group to the selected `I_FA` Choice Code.
 
 A blank or missing choice explicitly clears Item Disc. Group. Literal values
 and all other Config. Template fields remain under standard IWX and Business
 Central processing. The app neither changes the template nor handles an IWX
-Business Rule event; it validates the Item Disc. Group through the public IWX
-post-creation event and relies on the surrounding transaction to roll back an
-invalid code.
+Business Rule event; it validates Item Disc. Group through the standard Config.
+Template extension point and relies on the surrounding transaction to roll back
+an invalid code.
 
 ## Boundaries and upgrade impact
 
 The app contains event subscribers, table/page extensions, enum extensions,
-and management codeunits in its own ID range 50100–50115. It adds no new
+and management codeunits in its own ID range 50100–50116. It adds no new
 tables, changes no existing IDs or types, calls no Blue Ace internal helper,
 and does not take ownership of IWX's core lifecycle.
 

@@ -26,11 +26,12 @@ Custom Smart Item Number, pricing, and extended-text handling use their
 specific public IWX extension points. Their `IsHandled` behavior is scoped to
 those extension points; it does not suppress IWX Business Rules.
 
-The optional Item Disc. Group placeholder mapping listens only to the public
-post-Item-creation event. It reads the existing IWX Data Template reference and
-the standard Config. Template Line but never changes either record. It writes
-only the newly created Item's validated Item Disc. Group and does not handle a
-Business Rule event.
+The optional Item Disc. Group placeholder mapping starts only from the public
+IWX pre-Item-creation event. It reads the existing IWX Data Template reference
+and uses the standard Config. Template validation event to validate the
+resolved value, but never changes the IWX or Config. Template records. Its
+`IsHandled` assignment is limited to that standard template-field validation
+event; it does not handle a Business Rule event.
 
 ## PNE Frame Specification
 
@@ -52,3 +53,10 @@ and IWX table semantics remain compatible. Review every new write to an IWX
 record and every new `IsHandled := true` assignment to ensure it is not tied to
 a Business Rule lifecycle event. Do not add a dependency on internal IWX Rule
 Engine objects without written Insight Works approval.
+
+## Engineering enforcement
+
+The repository instructions in `AGENTS.md` make this boundary mandatory for
+all development work. They require an explicit impact assessment before an IWX
+write, event subscriber, or `IsHandled` assignment is added, and require work
+to stop for clarification if its effect on Business Rule evaluation is unclear.
