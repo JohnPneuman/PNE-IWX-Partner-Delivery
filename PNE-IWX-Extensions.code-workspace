@@ -1,0 +1,59 @@
+{
+    "folders": [
+        {
+            "name": "PNE Product Configurator Enhancements",
+            "path": "PNE.ProductConfiguratorEnhancements"
+        },
+        {
+            "name": "PNE Frame Specification",
+            "path": "PNE.FrameSpecification"
+        }
+    ],
+    "settings": {
+        "al.showHomeAtStartup": "Always",
+        "al.enableCodeAnalysis": true,
+        "al.backgroundCodeAnalysis": "Project",
+        "al.enableCodeActions": true
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-dynamics-smb.al"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "AL: Setup check",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder:PNE Product Configurator Enhancements}\\..\\scripts\\Test-AlDevelopmentEnvironment.ps1"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "AL: Validate all PTE apps",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder:PNE Product Configurator Enhancements}\\..\\scripts\\Invoke-AlValidation.ps1"
+                ],
+                "dependsOn": "AL: Setup check",
+                "problemMatcher": "$msCompile",
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                }
+            }
+        ]
+    }
+}

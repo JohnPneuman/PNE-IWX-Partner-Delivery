@@ -1,19 +1,24 @@
+namespace Pneuman.FrameSpecification;
+
+using Microsoft.Manufacturing.Document;
+using Microsoft.Sales.Document;
+
 codeunit 50154 "PNE Frame Spec. Mgt."
 {
     procedure BuildLinesFromConfigurationID(
         ConfigurationID: Code[20];
-        var TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary)
+        var TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary)
     var
-        TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
     begin
-        CopyConfigurationBranch(ConfigurationID, TempConfiguratorBOM, ActiveConfigurationIDs);
-        BuildLinesFromConfiguration(TempConfiguratorBOM, TempFrameSpecLine);
+        CopyConfigurationBranch(ConfigurationID, TempIWXConfiguratorBOMv3, ActiveConfigurationIDs);
+        BuildLinesFromConfiguration(TempIWXConfiguratorBOMv3, TempPNEFrameSpecLine);
     end;
 
     procedure BuildLinesFromProductionOrder(
         var ProductionOrder: Record "Production Order";
-        var TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
+        var TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
         var ConfigurationID: Code[20];
         var ProductionOrderLineNo: Integer;
         var ConfiguredItemNo: Code[20])
@@ -26,7 +31,7 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         then
             Error(ProductionOrderConfigurationNotFoundErr, ProductionOrder."No.");
 
-        BuildLinesFromConfigurationID(ConfigurationID, TempFrameSpecLine);
+        BuildLinesFromConfigurationID(ConfigurationID, TempPNEFrameSpecLine);
     end;
 
     procedure FindConfigurationForProductionOrder(
@@ -35,7 +40,7 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         var ProductionOrderLineNo: Integer;
         var ConfiguredItemNo: Code[20]): Boolean
     var
-        ProductionOrderLine: Record "Prod. Order Line";
+        ProdOrderLine: Record "Prod. Order Line";
     begin
         Clear(ConfigurationID);
         Clear(ProductionOrderLineNo);
@@ -54,16 +59,16 @@ codeunit 50154 "PNE Frame Spec. Mgt."
                 exit(true);
             end;
 
-        ProductionOrderLine.SetRange(Status, ProductionOrder.Status);
-        ProductionOrderLine.SetRange("Prod. Order No.", ProductionOrder."No.");
-        if ProductionOrderLine.FindSet() then
+        ProdOrderLine.SetRange(Status, ProductionOrder.Status);
+        ProdOrderLine.SetRange("Prod. Order No.", ProductionOrder."No.");
+        if ProdOrderLine.FindSet() then
             repeat
-                if TryFindConfigurationForConfiguredItem(ProductionOrderLine."Item No.", ConfigurationID) then begin
-                    ProductionOrderLineNo := ProductionOrderLine."Line No.";
-                    ConfiguredItemNo := ProductionOrderLine."Item No.";
+                if TryFindConfigurationForConfiguredItem(ProdOrderLine."Item No.", ConfigurationID) then begin
+                    ProductionOrderLineNo := ProdOrderLine."Line No.";
+                    ConfiguredItemNo := ProdOrderLine."Item No.";
                     exit(true);
                 end;
-            until ProductionOrderLine.Next() = 0;
+            until ProdOrderLine.Next() = 0;
 
         exit(false);
     end;
@@ -73,7 +78,7 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         var ConfigurationID: Code[20];
         var ConfiguredItemNo: Code[20]): Boolean
     var
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         SalesLine: Record "Sales Line";
     begin
         if SalesOrderNo = '' then
@@ -86,10 +91,10 @@ codeunit 50154 "PNE Frame Spec. Mgt."
             repeat
                 if TryGetFrameConfiguration(
                      SalesLine."IWX Cfg. Configuration ID",
-                     ConfiguratorBOM)
+                     IWXConfiguratorBOMv3)
                 then begin
                     ConfigurationID := SalesLine."IWX Cfg. Configuration ID";
-                    ConfiguredItemNo := ConfiguratorBOM."Configured Item No.";
+                    ConfiguredItemNo := IWXConfiguratorBOMv3."Configured Item No.";
                     if ConfiguredItemNo = '' then
                         ConfiguredItemNo := SalesLine."No.";
                     exit(true);
@@ -101,15 +106,15 @@ codeunit 50154 "PNE Frame Spec. Mgt."
 
     local procedure TryGetFrameConfiguration(
         ConfigurationID: Code[20];
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3"): Boolean
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3"): Boolean
     begin
         if ConfigurationID = '' then
             exit(false);
 
-        ConfiguratorBOM.Reset();
-        ConfiguratorBOM.SetRange("Configuration ID", ConfigurationID);
-        ConfiguratorBOM.SetRange("Configuration Option", FrameOptionCodeLbl);
-        exit(ConfiguratorBOM.FindFirst());
+        IWXConfiguratorBOMv3.Reset();
+        IWXConfiguratorBOMv3.SetRange("Configuration ID", ConfigurationID);
+        IWXConfiguratorBOMv3.SetRange("Configuration Option", FrameOptionCodeLbl);
+        exit(IWXConfiguratorBOMv3.FindFirst());
     end;
 
     procedure GetConfigurationHeader(
@@ -125,7 +130,7 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         var Height: Decimal;
         var Depth: Decimal)
     var
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
         Clear(ObjectDescription);
         Clear(FrameCode);
@@ -138,22 +143,22 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         Clear(Height);
         Clear(Depth);
 
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, ObjectOptionCodeLbl) then
-            ObjectDescription := CopyStr(ConfiguratorBOM."Option Text", 1, MaxStrLen(ObjectDescription));
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, FrameOptionCodeLbl) then begin
-            FrameCode := ConfiguratorBOM."Choice Code";
-            FrameQuantity := ConfiguratorBOM."Quantity per Unit";
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, ObjectOptionCodeLbl) then
+            ObjectDescription := CopyStr(IWXConfiguratorBOMv3."Option Text", 1, MaxStrLen(ObjectDescription));
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, FrameOptionCodeLbl) then begin
+            FrameCode := IWXConfiguratorBOMv3."Choice Code";
+            FrameQuantity := IWXConfiguratorBOMv3."Quantity per Unit";
         end;
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, FrontOptionCodeLbl) then
-            FrontCode := ConfiguratorBOM."Choice Code";
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, FrameColorOptionCodeLbl) then
-            ColorCode := ConfiguratorBOM."Choice Code";
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, WidthOptionCodeLbl) then
-            Width := ConfiguratorBOM."Quantity per Unit";
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, HeightOptionCodeLbl) then
-            Height := ConfiguratorBOM."Quantity per Unit";
-        if GetConfigurationOption(ConfiguratorBOM, ConfigurationID, DepthOptionCodeLbl) then
-            Depth := ConfiguratorBOM."Quantity per Unit";
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, FrontOptionCodeLbl) then
+            FrontCode := IWXConfiguratorBOMv3."Choice Code";
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, FrameColorOptionCodeLbl) then
+            ColorCode := IWXConfiguratorBOMv3."Choice Code";
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, WidthOptionCodeLbl) then
+            Width := IWXConfiguratorBOMv3."Quantity per Unit";
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, HeightOptionCodeLbl) then
+            Height := IWXConfiguratorBOMv3."Quantity per Unit";
+        if GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, DepthOptionCodeLbl) then
+            Depth := IWXConfiguratorBOMv3."Quantity per Unit";
 
         SpecialText := CopyStr(
             GetOptionDisplayValue(ConfigurationID, SpecialOptionCodeLbl),
@@ -173,75 +178,75 @@ codeunit 50154 "PNE Frame Spec. Mgt."
     end;
 
     procedure BuildLinesFromConfiguration(
-        var TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
-        var TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary)
+        var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
+        var TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary)
     var
-        FrameSpecRule: Record "PNE Frame Spec. Rule";
+        PNEFrameSpecRule: Record "PNE Frame Spec. Rule";
         FrameWidth: Decimal;
         FrameHeight: Decimal;
         NextLineNo: Integer;
     begin
-        TempFrameSpecLine.Reset();
-        TempFrameSpecLine.DeleteAll();
+        TempPNEFrameSpecLine.Reset();
+        TempPNEFrameSpecLine.DeleteAll();
 
-        if not FindFrameConfiguration(TempConfiguratorBOM) then
+        if not FindFrameConfiguration(TempIWXConfiguratorBOMv3) then
             Error(FrameConfigurationNotFoundErr, FrameOptionCodeLbl);
 
-        GetFrameDimensions(TempConfiguratorBOM, FrameWidth, FrameHeight);
-        FrameSpecRule.SetRange("Frame Configuration Code", TempConfiguratorBOM."Choice Code");
-        FrameSpecRule.SetRange(Enabled, true);
-        FrameSpecRule.SetCurrentKey("Frame Configuration Code", "Sort Order");
-        if FrameSpecRule.FindSet() then
+        GetFrameDimensions(TempIWXConfiguratorBOMv3, FrameWidth, FrameHeight);
+        PNEFrameSpecRule.SetRange("Frame Configuration Code", TempIWXConfiguratorBOMv3."Choice Code");
+        PNEFrameSpecRule.SetRange(Enabled, true);
+        PNEFrameSpecRule.SetCurrentKey("Frame Configuration Code", "Sort Order");
+        if PNEFrameSpecRule.FindSet() then
             repeat
-                if FrameOptionExists(TempConfiguratorBOM, FrameSpecRule."Configuration Option") then begin
+                if FrameOptionExists(TempIWXConfiguratorBOMv3, PNEFrameSpecRule."Configuration Option") then begin
                     NextLineNo += 10000;
                     InsertTemporaryLine(
-                        TempFrameSpecLine,
-                        TempConfiguratorBOM,
-                        FrameSpecRule,
+                        TempPNEFrameSpecLine,
+                        TempIWXConfiguratorBOMv3,
+                        PNEFrameSpecRule,
                         FrameWidth,
                         FrameHeight,
                         NextLineNo);
                 end;
-            until FrameSpecRule.Next() = 0;
+            until PNEFrameSpecRule.Next() = 0;
 
-        if TempFrameSpecLine.IsEmpty() then
-            Error(NoMatchingRulesErr, TempConfiguratorBOM."Choice Code");
+        if TempPNEFrameSpecLine.IsEmpty() then
+            Error(NoMatchingRulesErr, TempIWXConfiguratorBOMv3."Choice Code");
     end;
 
     local procedure FindFrameConfiguration(
-        var TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary): Boolean
+        var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary): Boolean
     begin
-        TempConfiguratorBOM.Reset();
-        TempConfiguratorBOM.SetRange("Configuration Option", FrameOptionCodeLbl);
-        exit(TempConfiguratorBOM.FindFirst());
+        TempIWXConfiguratorBOMv3.Reset();
+        TempIWXConfiguratorBOMv3.SetRange("Configuration Option", FrameOptionCodeLbl);
+        exit(TempIWXConfiguratorBOMv3.FindFirst());
     end;
 
     local procedure CopyConfigurationBranch(
         ConfigurationID: Code[20];
-        var TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean])
     var
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
         if ActiveConfigurationIDs.ContainsKey(ConfigurationID) then
             Error(CircularConfigurationErr, ConfigurationID);
 
         ActiveConfigurationIDs.Add(ConfigurationID, true);
-        ConfiguratorBOM.SetRange("Configuration ID", ConfigurationID);
-        if not ConfiguratorBOM.FindSet() then
+        IWXConfiguratorBOMv3.SetRange("Configuration ID", ConfigurationID);
+        if not IWXConfiguratorBOMv3.FindSet() then
             Error(ConfigurationNotFoundErr, ConfigurationID);
 
         repeat
-            TempConfiguratorBOM.Init();
-            TempConfiguratorBOM.TransferFields(ConfiguratorBOM);
-            TempConfiguratorBOM.Insert();
-            if ConfiguratorBOM."Choice Configuration ID" <> '' then
+            TempIWXConfiguratorBOMv3.Init();
+            TempIWXConfiguratorBOMv3.TransferFields(IWXConfiguratorBOMv3);
+            TempIWXConfiguratorBOMv3.Insert();
+            if IWXConfiguratorBOMv3."Choice Configuration ID" <> '' then
                 CopyConfigurationBranch(
-                    ConfiguratorBOM."Choice Configuration ID",
-                    TempConfiguratorBOM,
+                    IWXConfiguratorBOMv3."Choice Configuration ID",
+                    TempIWXConfiguratorBOMv3,
                     ActiveConfigurationIDs);
-        until ConfiguratorBOM.Next() = 0;
+        until IWXConfiguratorBOMv3.Next() = 0;
         ActiveConfigurationIDs.Remove(ConfigurationID);
     end;
 
@@ -249,116 +254,116 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         ConfiguredItemNo: Code[20];
         var ConfigurationID: Code[20]): Boolean
     var
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
         if ConfiguredItemNo = '' then
             exit(false);
 
-        ConfiguratorBOM.SetCurrentKey("Configured Item No.");
-        ConfiguratorBOM.SetRange("Configured Item No.", ConfiguredItemNo);
-        ConfiguratorBOM.SetRange("Configuration Option", FrameOptionCodeLbl);
-        if not ConfiguratorBOM.FindFirst() then
+        IWXConfiguratorBOMv3.SetCurrentKey("Configured Item No.");
+        IWXConfiguratorBOMv3.SetRange("Configured Item No.", ConfiguredItemNo);
+        IWXConfiguratorBOMv3.SetRange("Configuration Option", FrameOptionCodeLbl);
+        if not IWXConfiguratorBOMv3.FindFirst() then
             exit(false);
 
-        ConfigurationID := ConfiguratorBOM."Configuration ID";
+        ConfigurationID := IWXConfiguratorBOMv3."Configuration ID";
         exit(ConfigurationID <> '');
     end;
 
     local procedure GetConfigurationOption(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ConfigurationID: Code[20];
         OptionCode: Code[20]): Boolean
     begin
-        ConfiguratorBOM.Reset();
-        ConfiguratorBOM.SetRange("Configuration ID", ConfigurationID);
-        ConfiguratorBOM.SetRange("Configuration Option", OptionCode);
-        exit(ConfiguratorBOM.FindFirst());
+        IWXConfiguratorBOMv3.Reset();
+        IWXConfiguratorBOMv3.SetRange("Configuration ID", ConfigurationID);
+        IWXConfiguratorBOMv3.SetRange("Configuration Option", OptionCode);
+        exit(IWXConfiguratorBOMv3.FindFirst());
     end;
 
     local procedure GetOptionDisplayValue(ConfigurationID: Code[20]; OptionCode: Code[20]): Text[250]
     var
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
-        if not GetConfigurationOption(ConfiguratorBOM, ConfigurationID, OptionCode) then
+        if not GetConfigurationOption(IWXConfiguratorBOMv3, ConfigurationID, OptionCode) then
             exit('');
-        if ConfiguratorBOM."Option Text" <> '' then
-            exit(ConfiguratorBOM."Option Text");
-        exit(ConfiguratorBOM."Choice Code");
+        if IWXConfiguratorBOMv3."Option Text" <> '' then
+            exit(IWXConfiguratorBOMv3."Option Text");
+        exit(IWXConfiguratorBOMv3."Choice Code");
     end;
 
     local procedure GetFrameDimensions(
-        var TempFrameConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        var TempFrameIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         var FrameWidth: Decimal;
         var FrameHeight: Decimal)
     var
-        TempFrameConfigurationBOM: Record "IWX Configurator BOM v3" temporary;
+        TempFrameConfigurationIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
     begin
-        SetFrameConfigurationFilters(TempFrameConfigurationBOM, TempFrameConfiguratorBOM);
-        FrameWidth := GetDimension(TempFrameConfigurationBOM, WidthOptionCodeLbl);
-        FrameHeight := GetDimension(TempFrameConfigurationBOM, HeightOptionCodeLbl);
+        SetFrameConfigurationFilters(TempFrameConfigurationIWXConfiguratorBOMv3, TempFrameIWXConfiguratorBOMv3);
+        FrameWidth := GetDimension(TempFrameConfigurationIWXConfiguratorBOMv3, WidthOptionCodeLbl);
+        FrameHeight := GetDimension(TempFrameConfigurationIWXConfiguratorBOMv3, HeightOptionCodeLbl);
     end;
 
     local procedure GetDimension(
-        var TempFrameConfigurationBOM: Record "IWX Configurator BOM v3" temporary;
+        var TempFrameConfigurationIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         OptionCode: Code[20]): Decimal
     var
-        TempDimensionBOM: Record "IWX Configurator BOM v3" temporary;
+        TempDimensionIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
     begin
-        TempDimensionBOM.Copy(TempFrameConfigurationBOM, true);
-        TempDimensionBOM.SetRange("Configuration Option", OptionCode);
-        if not TempDimensionBOM.FindFirst() then
+        TempDimensionIWXConfiguratorBOMv3.Copy(TempFrameConfigurationIWXConfiguratorBOMv3, true);
+        TempDimensionIWXConfiguratorBOMv3.SetRange("Configuration Option", OptionCode);
+        if not TempDimensionIWXConfiguratorBOMv3.FindFirst() then
             exit(0);
 
-        exit(TempDimensionBOM."Quantity per Unit");
+        exit(TempDimensionIWXConfiguratorBOMv3."Quantity per Unit");
     end;
 
     local procedure FrameOptionExists(
-        var TempFrameConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        var TempFrameIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ConfigurationOption: Code[20]): Boolean
     var
-        TempFrameConfigurationBOM: Record "IWX Configurator BOM v3" temporary;
+        TempFrameConfigurationIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
     begin
-        SetFrameConfigurationFilters(TempFrameConfigurationBOM, TempFrameConfiguratorBOM);
-        TempFrameConfigurationBOM.SetRange("Configuration Option", ConfigurationOption);
-        exit(not TempFrameConfigurationBOM.IsEmpty());
+        SetFrameConfigurationFilters(TempFrameConfigurationIWXConfiguratorBOMv3, TempFrameIWXConfiguratorBOMv3);
+        TempFrameConfigurationIWXConfiguratorBOMv3.SetRange("Configuration Option", ConfigurationOption);
+        exit(not TempFrameConfigurationIWXConfiguratorBOMv3.IsEmpty());
     end;
 
     local procedure SetFrameConfigurationFilters(
-        var TempFrameConfigurationBOM: Record "IWX Configurator BOM v3" temporary;
-        var TempFrameConfiguratorBOM: Record "IWX Configurator BOM v3" temporary)
+        var TempFrameConfigurationIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
+        var TempFrameIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary)
     begin
-        TempFrameConfigurationBOM.Copy(TempFrameConfiguratorBOM, true);
-        TempFrameConfigurationBOM.Reset();
-        TempFrameConfigurationBOM.SetRange("Configuration ID", TempFrameConfiguratorBOM."Choice Configuration ID");
+        TempFrameConfigurationIWXConfiguratorBOMv3.Copy(TempFrameIWXConfiguratorBOMv3, true);
+        TempFrameConfigurationIWXConfiguratorBOMv3.Reset();
+        TempFrameConfigurationIWXConfiguratorBOMv3.SetRange("Configuration ID", TempFrameIWXConfiguratorBOMv3."Choice Configuration ID");
     end;
 
     local procedure InsertTemporaryLine(
-        var TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
-        var TempFrameConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
-        FrameSpecRule: Record "PNE Frame Spec. Rule";
+        var TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
+        var TempFrameIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
+        PNEFrameSpecRule: Record "PNE Frame Spec. Rule";
         FrameWidth: Decimal;
         FrameHeight: Decimal;
         LineNo: Integer)
     begin
-        TempFrameSpecLine.Init();
-        TempFrameSpecLine."Line No." := LineNo;
-        TempFrameSpecLine."Source Configuration ID" := TempFrameConfiguratorBOM."Choice Configuration ID";
-        TempFrameSpecLine."Frame Configuration Code" := TempFrameConfiguratorBOM."Choice Code";
-        TempFrameSpecLine."Configuration Option" := FrameSpecRule."Configuration Option";
-        TempFrameSpecLine."Item No." := FrameSpecRule."Component No.";
-        TempFrameSpecLine.Description := FrameSpecRule.Description;
-        TempFrameSpecLine.Quantity := FrameSpecRule.Quantity;
-        TempFrameSpecLine."Width Correction (mm)" := FrameSpecRule."Width Correction (mm)";
-        TempFrameSpecLine."Height Correction (mm)" := FrameSpecRule."Height Correction (mm)";
-        if FrameSpecRule."Use Width" and FrameSpecRule."Use Height" then
-            TempFrameSpecLine."Line Type" := TempFrameSpecLine."Line Type"::Plate
+        TempPNEFrameSpecLine.Init();
+        TempPNEFrameSpecLine."Line No." := LineNo;
+        TempPNEFrameSpecLine."Source Configuration ID" := TempFrameIWXConfiguratorBOMv3."Choice Configuration ID";
+        TempPNEFrameSpecLine."Frame Configuration Code" := TempFrameIWXConfiguratorBOMv3."Choice Code";
+        TempPNEFrameSpecLine."Configuration Option" := PNEFrameSpecRule."Configuration Option";
+        TempPNEFrameSpecLine."Item No." := PNEFrameSpecRule."Component No.";
+        TempPNEFrameSpecLine.Description := PNEFrameSpecRule.Description;
+        TempPNEFrameSpecLine.Quantity := PNEFrameSpecRule.Quantity;
+        TempPNEFrameSpecLine."Width Correction (mm)" := PNEFrameSpecRule."Width Correction (mm)";
+        TempPNEFrameSpecLine."Height Correction (mm)" := PNEFrameSpecRule."Height Correction (mm)";
+        if PNEFrameSpecRule."Use Width" and PNEFrameSpecRule."Use Height" then
+            TempPNEFrameSpecLine."Line Type" := TempPNEFrameSpecLine."Line Type"::Plate
         else
-            TempFrameSpecLine."Line Type" := TempFrameSpecLine."Line Type"::Profile;
-        if FrameSpecRule."Use Width" then
-            TempFrameSpecLine."Width (mm)" := FrameWidth + FrameSpecRule."Width Correction (mm)";
-        if FrameSpecRule."Use Height" then
-            TempFrameSpecLine."Height (mm)" := FrameHeight + FrameSpecRule."Height Correction (mm)";
-        TempFrameSpecLine.Insert();
+            TempPNEFrameSpecLine."Line Type" := TempPNEFrameSpecLine."Line Type"::Profile;
+        if PNEFrameSpecRule."Use Width" then
+            TempPNEFrameSpecLine."Width (mm)" := FrameWidth + PNEFrameSpecRule."Width Correction (mm)";
+        if PNEFrameSpecRule."Use Height" then
+            TempPNEFrameSpecLine."Height (mm)" := FrameHeight + PNEFrameSpecRule."Height Correction (mm)";
+        TempPNEFrameSpecLine.Insert();
     end;
 
     var

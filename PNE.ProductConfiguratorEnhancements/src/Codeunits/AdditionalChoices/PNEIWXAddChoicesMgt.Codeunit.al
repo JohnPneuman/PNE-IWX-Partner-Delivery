@@ -1,13 +1,17 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Manufacturing.ProductionBOM;
+
 codeunit 50102 "PNE IWX Add. Choices Mgt."
 {
     procedure SetProductionBOMFilterTable(
         var ObjectID: Integer;
-        ConfiguratorOption: Record "IWX Configurator Option v3")
+        IWXConfiguratorOptionv3: Record "IWX Configurator Option v3")
     var
-        IWXAdapter: Codeunit "PNE IWX Adapter";
+        PNEIWXAdapter: Codeunit "PNE IWX Adapter";
     begin
-        if not IWXAdapter.IsProductionBOMAdditionalChoices(
-            ConfiguratorOption)
+        if not PNEIWXAdapter.IsProductionBOMAdditionalChoices(
+            IWXConfiguratorOptionv3)
         then
             exit;
 
@@ -16,15 +20,15 @@ codeunit 50102 "PNE IWX Add. Choices Mgt."
 
 
     procedure SelectProductionBOM(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3")
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     var
         ProductionBOMHeader: Record "Production BOM Header";
-        IWXAdapter: Codeunit "PNE IWX Adapter";
+        PNEIWXAdapter: Codeunit "PNE IWX Adapter";
         ProductionBOMList: Page "Production BOM List";
         AdditionalChoicesFilter: Text;
     begin
-        if not IWXAdapter.GetProductionBOMAdditionalChoicesFilter(
-            ConfiguratorBOM,
+        if not PNEIWXAdapter.GetProductionBOMAdditionalChoicesFilter(
+            IWXConfiguratorBOMv3,
             AdditionalChoicesFilter)
         then
             exit;
@@ -41,8 +45,8 @@ codeunit 50102 "PNE IWX Add. Choices Mgt."
 
         ProductionBOMList.GetRecord(ProductionBOMHeader);
 
-        IWXAdapter.EnsureAndApplyProductionBOMChoice(
-            ConfiguratorBOM,
+        PNEIWXAdapter.EnsureAndApplyProductionBOMChoice(
+            IWXConfiguratorBOMv3,
             ProductionBOMHeader);
     end;
 }

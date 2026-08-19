@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 tableextension 50106 "PNE IWX Configurator BOM" extends "IWX Configurator BOM v3"
 {
     fields
@@ -11,9 +13,9 @@ tableextension 50106 "PNE IWX Configurator BOM" extends "IWX Configurator BOM v3
 
             trigger OnValidate()
             var
-                IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+                PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
             begin
-                IWXPricingMgt.UpdateConfiguratorBOMUnitPrice(Rec);
+                PNEIWXPricingMgt.UpdateConfiguratorBOMUnitPrice(Rec);
             end;
         }
     }

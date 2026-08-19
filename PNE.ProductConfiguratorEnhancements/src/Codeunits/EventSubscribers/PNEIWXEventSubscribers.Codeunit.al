@@ -1,3 +1,10 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Foundation.ExtendedText;
+using Microsoft.Inventory.Item;
+using Microsoft.Sales.Document;
+using System.IO;
+
 codeunit 50101 "PNE IWX Event Subscribers"
 {
     // Bepaalt welke tabel IWX gebruikt voor het
@@ -59,7 +66,7 @@ codeunit 50101 "PNE IWX Event Subscribers"
         pxrecIWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     var
         ProductionBOMCostMgt: Codeunit "PNE Production BOM Cost Mgt.";
-        IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+        PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
         NonInventoryCost: Decimal;
     begin
         if (precIWXCfgOptionChoicev3.Type =
@@ -75,7 +82,7 @@ codeunit 50101 "PNE IWX Event Subscribers"
                 NonInventoryCost;
         end;
 
-        IWXPricingMgt.UpdateWhenUsedUnitPriceAfterUnitCost(
+        PNEIWXPricingMgt.UpdateWhenUsedUnitPriceAfterUnitCost(
             precIWXCfgOptionChoicev3);
     end;
 
@@ -91,12 +98,12 @@ codeunit 50101 "PNE IWX Event Subscribers"
         var precIWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
         var pbIsHandled: Boolean)
     var
-        IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+        PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
     begin
         if precIWXCfgOptionChoicev3."Item Profit Group Code PNE" = '' then
             exit;
 
-        IWXPricingMgt.UpdateOptionChoiceUnitPriceFromProfitGroup(
+        PNEIWXPricingMgt.UpdateOptionChoiceUnitPriceFromProfitGroup(
             precIWXCfgOptionChoicev3);
 
         pbIsHandled := true;
@@ -114,9 +121,9 @@ codeunit 50101 "PNE IWX Event Subscribers"
         var precIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         pxrecIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     var
-        IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+        PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
     begin
-        IWXPricingMgt.ApplySelectedChoiceToConfiguratorBOM(
+        PNEIWXPricingMgt.ApplySelectedChoiceToConfiguratorBOM(
             precIWXConfiguratorBOMv3);
     end;
 
@@ -132,9 +139,9 @@ codeunit 50101 "PNE IWX Event Subscribers"
         var ptrecIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         var pcodItemCategoryCode: Code[20])
     var
-        IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+        PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
     begin
-        IWXPricingMgt.ApplyDefaultsToConfiguratorBOM(
+        PNEIWXPricingMgt.ApplyDefaultsToConfiguratorBOM(
             ptrecIWXConfiguratorBOMv3);
     end;
 

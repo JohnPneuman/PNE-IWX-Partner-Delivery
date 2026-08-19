@@ -1,3 +1,8 @@
+namespace Pneuman.FrameSpecification;
+
+using Microsoft.Inventory.Item;
+using Microsoft.Manufacturing.ProductionBOM;
+
 page 50153 "PNE Frame Spec. Rules"
 {
     ApplicationArea = All;

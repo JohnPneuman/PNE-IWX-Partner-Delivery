@@ -1,168 +1,172 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Manufacturing.ProductionBOM;
+
 codeunit 50103 "PNE IWX Adapter"
 {
     procedure IsProductionBOMAdditionalChoices(
-        ConfiguratorOption: Record "IWX Configurator Option v3"): Boolean
+        IWXConfiguratorOptionv3: Record "IWX Configurator Option v3"): Boolean
     begin
         exit(
-            ConfiguratorOption."Additional Choices Type" =
-            ConfiguratorOption."Additional Choices Type"::"Production BOMs");
+            IWXConfiguratorOptionv3."Additional Choices Type" =
+            IWXConfiguratorOptionv3."Additional Choices Type"::"Production BOMs");
     end;
 
 
     procedure GetProductionBOMAdditionalChoicesFilter(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         var AdditionalChoicesFilter: Text): Boolean
     var
-        ConfiguratorOption: Record "IWX Configurator Option v3";
+        IWXConfiguratorOptionv3: Record "IWX Configurator Option v3";
     begin
-        if not ConfiguratorOption.Get(
-            ConfiguratorBOM."Item Category Code",
-            ConfiguratorBOM."Configuration Option")
+        if not IWXConfiguratorOptionv3.Get(
+            IWXConfiguratorBOMv3."Item Category Code",
+            IWXConfiguratorBOMv3."Configuration Option")
         then
             exit(false);
 
         if not IsProductionBOMAdditionalChoices(
-            ConfiguratorOption)
+            IWXConfiguratorOptionv3)
         then
             exit(false);
 
         AdditionalChoicesFilter :=
-            ConfiguratorOption."Additional Choices Filter";
+            IWXConfiguratorOptionv3."Additional Choices Filter";
 
         exit(true);
     end;
 
 
     procedure EnsureAndApplyProductionBOMChoice(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ProductionBOMHeader: Record "Production BOM Header")
     var
-        OptionChoice: Record "IWX Cfg Option Choice v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
     begin
         EnsureProductionBOMOptionChoice(
-            ConfiguratorBOM,
+            IWXConfiguratorBOMv3,
             ProductionBOMHeader,
-            OptionChoice);
+            IWXCfgOptionChoicev3);
 
         ApplyOptionChoiceToConfiguratorBOM(
-            ConfiguratorBOM,
-            OptionChoice);
+            IWXConfiguratorBOMv3,
+            IWXCfgOptionChoicev3);
     end;
 
 
     local procedure EnsureProductionBOMOptionChoice(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ProductionBOMHeader: Record "Production BOM Header";
-        var OptionChoice: Record "IWX Cfg Option Choice v3")
+        var IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     begin
-        if OptionChoice.Get(
-            ConfiguratorBOM."Item Category Code",
-            ConfiguratorBOM."Configuration Option",
+        if IWXCfgOptionChoicev3.Get(
+            IWXConfiguratorBOMv3."Item Category Code",
+            IWXConfiguratorBOMv3."Configuration Option",
             ProductionBOMHeader."No.")
         then begin
-            if OptionChoice.Type <>
-               OptionChoice.Type::"Production BOM"
+            if IWXCfgOptionChoicev3.Type <>
+               IWXCfgOptionChoicev3.Type::"Production BOM"
             then
                 Error(
                     'Keuzecode %1 bestaat al, maar is geen Production BOM.',
                     ProductionBOMHeader."No.");
 
-            if OptionChoice."No." <>
+            if IWXCfgOptionChoicev3."No." <>
                ProductionBOMHeader."No."
             then
                 Error(
                     'Keuzecode %1 is gekoppeld aan nummer %2.',
-                    OptionChoice.Code,
-                    OptionChoice."No.");
+                    IWXCfgOptionChoicev3.Code,
+                    IWXCfgOptionChoicev3."No.");
 
             // IWX-kostprijs opnieuw berekenen.
             // Het OnAfterUpdateUnitCost-event telt daarna
             // de non-inventory kosten erbij op.
-            OptionChoice.UpdateUnitCost();
-            OptionChoice.Modify(true);
+            IWXCfgOptionChoicev3.UpdateUnitCost();
+            IWXCfgOptionChoicev3.Modify(true);
 
             exit;
         end;
 
-        OptionChoice.Init();
+        IWXCfgOptionChoicev3.Init();
 
-        OptionChoice."Item Category Code" :=
-            ConfiguratorBOM."Item Category Code";
+        IWXCfgOptionChoicev3."Item Category Code" :=
+            IWXConfiguratorBOMv3."Item Category Code";
 
-        OptionChoice."Configuration Option" :=
-            ConfiguratorBOM."Configuration Option";
+        IWXCfgOptionChoicev3."Configuration Option" :=
+            IWXConfiguratorBOMv3."Configuration Option";
 
-        OptionChoice.Validate(
+        IWXCfgOptionChoicev3.Validate(
             Type,
-            OptionChoice.Type::"Production BOM");
+            IWXCfgOptionChoicev3.Type::"Production BOM");
 
         // IWX vult hiermee onder andere:
         // Code, Description en Unit Cost.
-        OptionChoice.Validate(
+        IWXCfgOptionChoicev3.Validate(
             "No.",
             ProductionBOMHeader."No.");
 
-        OptionChoice.Insert(true);
+        IWXCfgOptionChoicev3.Insert(true);
     end;
 
 
     local procedure ApplyOptionChoiceToConfiguratorBOM(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
-        OptionChoice: Record "IWX Cfg Option Choice v3")
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     var
-        IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+        PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
     begin
-        ConfiguratorBOM."Choice Code" :=
+        IWXConfiguratorBOMv3."Choice Code" :=
             CopyStr(
-                OptionChoice.Code,
+                IWXCfgOptionChoicev3.Code,
                 1,
-                MaxStrLen(ConfiguratorBOM."Choice Code"));
+                MaxStrLen(IWXConfiguratorBOMv3."Choice Code"));
 
-        ConfiguratorBOM.Description :=
+        IWXConfiguratorBOMv3.Description :=
             CopyStr(
-                OptionChoice.Description,
+                IWXCfgOptionChoicev3.Description,
                 1,
-                MaxStrLen(ConfiguratorBOM.Description));
+                MaxStrLen(IWXConfiguratorBOMv3.Description));
 
-        ConfiguratorBOM."Choice Type" :=
-            OptionChoice.Type;
+        IWXConfiguratorBOMv3."Choice Type" :=
+            IWXCfgOptionChoicev3.Type;
 
-        ConfiguratorBOM."Choice No." :=
+        IWXConfiguratorBOMv3."Choice No." :=
             CopyStr(
-                OptionChoice."No.",
+                IWXCfgOptionChoicev3."No.",
                 1,
-                MaxStrLen(ConfiguratorBOM."Choice No."));
+                MaxStrLen(IWXConfiguratorBOMv3."Choice No."));
 
-        ConfiguratorBOM."Choice Variant Code" :=
-            OptionChoice."Variant Code";
+        IWXConfiguratorBOMv3."Choice Variant Code" :=
+            IWXCfgOptionChoicev3."Variant Code";
 
-        ConfiguratorBOM."Choice Unit Price" :=
-            OptionChoice."Unit Price";
+        IWXConfiguratorBOMv3."Choice Unit Price" :=
+            IWXCfgOptionChoicev3."Unit Price";
 
-        ConfiguratorBOM."Unit Price" :=
-            OptionChoice."Unit Price";
+        IWXConfiguratorBOMv3."Unit Price" :=
+            IWXCfgOptionChoicev3."Unit Price";
 
-        ConfiguratorBOM."Unit Cost" :=
-            OptionChoice."Unit Cost";
+        IWXConfiguratorBOMv3."Unit Cost" :=
+            IWXCfgOptionChoicev3."Unit Cost";
 
-        ConfiguratorBOM."Unit of Measure Code" :=
-            OptionChoice."Unit of Measure Code";
+        IWXConfiguratorBOMv3."Unit of Measure Code" :=
+            IWXCfgOptionChoicev3."Unit of Measure Code";
 
-        ConfiguratorBOM."Ext. Text Template" :=
-            OptionChoice."Ext. Text Template";
+        IWXConfiguratorBOMv3."Ext. Text Template" :=
+            IWXCfgOptionChoicev3."Ext. Text Template";
 
-        ConfiguratorBOM."Image Set Code" :=
-            OptionChoice."Image Set Code";
+        IWXConfiguratorBOMv3."Image Set Code" :=
+            IWXCfgOptionChoicev3."Image Set Code";
 
-        ConfiguratorBOM."Routing Link Code" :=
-            OptionChoice.GetRoutingLinkCode();
+        IWXConfiguratorBOMv3."Routing Link Code" :=
+            IWXCfgOptionChoicev3.GetRoutingLinkCode();
 
-        if OptionChoice."Default Quantity" <> 0 then
-            ConfiguratorBOM."Quantity per Unit" :=
-                OptionChoice."Default Quantity";
+        if IWXCfgOptionChoicev3."Default Quantity" <> 0 then
+            IWXConfiguratorBOMv3."Quantity per Unit" :=
+                IWXCfgOptionChoicev3."Default Quantity";
 
-        IWXPricingMgt.ApplyOptionChoiceToConfiguratorBOM(
-            ConfiguratorBOM,
-            OptionChoice);
+        PNEIWXPricingMgt.ApplyOptionChoiceToConfiguratorBOM(
+            IWXConfiguratorBOMv3,
+            IWXCfgOptionChoicev3);
     end;
 }

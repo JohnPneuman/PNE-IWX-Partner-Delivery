@@ -1,3 +1,5 @@
+namespace Pneuman.FrameSpecification;
+
 enum 50160 "PNE Frame Spec. Component Type"
 {
     Extensible = false;

@@ -1,28 +1,33 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Inventory.Item;
+using System.IO;
+
 codeunit 50116 "PNE IWX Item Template Mgt."
 {
     SingleInstance = true;
 
     procedure StartConfiguredItemCreation(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3")
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     var
-        ConfiguratorItemCategory: Record "IWX Cfg Item Category v3";
+        IWXCfgItemCategoryv3: Record "IWX Cfg Item Category v3";
     begin
         ClearConfiguredItemCreation();
 
-        if not ConfiguratorItemCategory.Get(
-            ConfiguratorBOM."Item Category Code")
+        if not IWXCfgItemCategoryv3.Get(
+            IWXConfiguratorBOMv3."Item Category Code")
         then
             exit;
 
-        if ConfiguratorItemCategory."Data Template" = '' then
+        if IWXCfgItemCategoryv3."Data Template" = '' then
             exit;
 
-        ActiveConfigurationID := ConfiguratorBOM."Configuration ID";
-        ActiveDataTemplateCode := ConfiguratorItemCategory."Data Template";
+        ActiveConfigurationID := IWXConfiguratorBOMv3."Configuration ID";
+        ActiveDataTemplateCode := IWXCfgItemCategoryv3."Data Template";
     end;
 
     procedure ApplyItemDiscGroupPlaceholder(
-        var RecRef: RecordRef;
+        var RecordRef: RecordRef;
         FieldRef: FieldRef;
         ConfigTemplateLine: Record "Config. Template Line";
         var IsHandled: Boolean)
@@ -31,7 +36,7 @@ codeunit 50116 "PNE IWX Item Template Mgt."
         ChoiceCode: Code[20];
     begin
         if not IsConfiguredItemDiscGroupPlaceholder(
-            RecRef,
+            RecordRef,
             FieldRef,
             ConfigTemplateLine,
             OptionCode)
@@ -50,7 +55,7 @@ codeunit 50116 "PNE IWX Item Template Mgt."
     end;
 
     local procedure IsConfiguredItemDiscGroupPlaceholder(
-        RecRef: RecordRef;
+        RecordRef: RecordRef;
         FieldRef: FieldRef;
         ConfigTemplateLine: Record "Config. Template Line";
         var OptionCode: Code[20]): Boolean
@@ -68,7 +73,7 @@ codeunit 50116 "PNE IWX Item Template Mgt."
         then
             exit(false);
 
-        if (RecRef.Number <> Database::Item) or
+        if (RecordRef.Number <> Database::Item) or
            (FieldRef.Number <> Item.FieldNo("Item Disc. Group"))
         then
             exit(false);
@@ -98,18 +103,18 @@ codeunit 50116 "PNE IWX Item Template Mgt."
 
     local procedure GetChoiceCode(OptionCode: Code[20]): Code[20]
     var
-        SelectedConfiguratorBOM: Record "IWX Configurator BOM v3";
+        SelectedIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
-        SelectedConfiguratorBOM.SetRange(
+        SelectedIWXConfiguratorBOMv3.SetRange(
             "Configuration ID",
             ActiveConfigurationID);
-        SelectedConfiguratorBOM.SetRange(
+        SelectedIWXConfiguratorBOMv3.SetRange(
             "Configuration Option",
             OptionCode);
-        if not SelectedConfiguratorBOM.FindFirst() then
+        if not SelectedIWXConfiguratorBOMv3.FindFirst() then
             exit('');
 
-        exit(SelectedConfiguratorBOM."Choice Code");
+        exit(SelectedIWXConfiguratorBOMv3."Choice Code");
     end;
 
     var

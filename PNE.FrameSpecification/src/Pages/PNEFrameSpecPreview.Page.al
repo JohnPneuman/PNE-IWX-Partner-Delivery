@@ -1,3 +1,5 @@
+namespace Pneuman.FrameSpecification;
+
 page 50156 "PNE Frame Spec. Preview"
 {
     ApplicationArea = All;
@@ -49,8 +51,8 @@ page 50156 "PNE Frame Spec. Preview"
         }
     }
 
-    procedure SetLines(var TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary)
+    procedure SetLines(var TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary)
     begin
-        Rec.Copy(TempFrameSpecLine, true);
+        Rec.Copy(TempPNEFrameSpecLine, true);
     end;
 }

@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 pageextension 50107 "PNE IWX Option Choice Card" extends "IWX Configurator Choice Card"
 {
     layout

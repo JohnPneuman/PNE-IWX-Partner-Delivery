@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 enumextension 50100 "PNE IWX Add. Choice Type"
     extends "IWX Cfg. Additional Choices Type"
 {

@@ -1,3 +1,11 @@
+namespace Pneuman.FrameSpecification;
+
+using Microsoft.Foundation.Company;
+using Microsoft.Manufacturing.Document;
+using Microsoft.Projects.Project.Job;
+using Microsoft.Sales.Document;
+using System.Utilities;
+
 report 50158 "PNE Frame Specification"
 {
     ApplicationArea = All;
@@ -52,24 +60,24 @@ report 50158 "PNE Frame Specification"
                 trigger OnPreDataItem()
                 begin
                     SetRange(Number, 1, LineCount);
-                    TempFrameSpecLine.Reset();
-                    TempFrameSpecLine.SetCurrentKey(Description, "Line No.");
+                    TempPNEFrameSpecLine.Reset();
+                    TempPNEFrameSpecLine.SetCurrentKey(Description, "Line No.");
                 end;
 
                 trigger OnAfterGetRecord()
                 begin
                     if Number = 1 then begin
-                        if not TempFrameSpecLine.FindFirst() then
+                        if not TempPNEFrameSpecLine.FindFirst() then
                             CurrReport.Break();
                     end else
-                        TempFrameSpecLine.Next();
+                        TempPNEFrameSpecLine.Next();
 
-                    LineConfigurationOption := TempFrameSpecLine."Configuration Option";
-                    LineItemNo := TempFrameSpecLine."Item No.";
-                    LineDescription := TempFrameSpecLine.Description;
-                    LineQuantityText := FormatQuantity(TempFrameSpecLine.Quantity);
-                    LineWidthText := FormatDimension(TempFrameSpecLine."Width (mm)");
-                    LineHeightText := FormatDimension(TempFrameSpecLine."Height (mm)");
+                    LineConfigurationOption := TempPNEFrameSpecLine."Configuration Option";
+                    LineItemNo := TempPNEFrameSpecLine."Item No.";
+                    LineDescription := TempPNEFrameSpecLine.Description;
+                    LineQuantityText := FormatQuantity(TempPNEFrameSpecLine.Quantity);
+                    LineWidthText := FormatDimension(TempPNEFrameSpecLine."Width (mm)");
+                    LineHeightText := FormatDimension(TempPNEFrameSpecLine."Height (mm)");
                 end;
             }
 
@@ -102,13 +110,13 @@ report 50158 "PNE Frame Specification"
     begin
         ClearReportValues();
 
-        FrameSpecMgt.BuildLinesFromProductionOrder(
+        PNEFrameSpecMgt.BuildLinesFromProductionOrder(
             ProductionOrder,
-            TempFrameSpecLine,
+            TempPNEFrameSpecLine,
             ConfigurationID,
             ProductionOrderLineNo,
             ConfiguredItemNo);
-        FrameSpecMgt.GetConfigurationHeader(
+        PNEFrameSpecMgt.GetConfigurationHeader(
             ConfigurationID,
             ObjectDescription,
             FrameCode,
@@ -136,7 +144,7 @@ report 50158 "PNE Frame Specification"
         FrameWidthText := FormatDimension(FrameWidth);
         FrameHeightText := FormatDimension(FrameHeight);
         FrameDepthText := FormatDimension(FrameDepth);
-        LineCount := TempFrameSpecLine.Count();
+        LineCount := TempPNEFrameSpecLine.Count();
     end;
 
     local procedure LoadSalesAndProjectValues(ConfigurationIDToFind: Code[20])
@@ -168,8 +176,8 @@ report 50158 "PNE Frame Specification"
 
     local procedure ClearReportValues()
     begin
-        TempFrameSpecLine.Reset();
-        TempFrameSpecLine.DeleteAll();
+        TempPNEFrameSpecLine.Reset();
+        TempPNEFrameSpecLine.DeleteAll();
         Clear(ConfigurationID);
         Clear(ConfiguredItemNo);
         Clear(ProductionOrderLineNo);
@@ -207,8 +215,8 @@ report 50158 "PNE Frame Specification"
     end;
 
     var
-        TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
-        FrameSpecMgt: Codeunit "PNE Frame Spec. Mgt.";
+        TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
+        PNEFrameSpecMgt: Codeunit "PNE Frame Spec. Mgt.";
         ConfigurationID: Code[20];
         ConfiguredItemNo: Code[20];
         ProductionOrderLineNo: Integer;

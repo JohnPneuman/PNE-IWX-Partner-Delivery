@@ -1,135 +1,140 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Finance.GeneralLedger.Setup;
+using Microsoft.Inventory.Item;
+
 codeunit 50110 "PNE IWX Pricing Mgt."
 {
     Permissions =
         tabledata "Item Profit Group PTE" = r;
 
     procedure GetEffectiveProfitGroupCode(
-        OptionChoice: Record "IWX Cfg Option Choice v3"): Code[10]
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3"): Code[10]
     var
         Item: Record Item;
     begin
-        if OptionChoice."Item Profit Group Code PNE" <> '' then
-            exit(OptionChoice."Item Profit Group Code PNE");
+        if IWXCfgOptionChoicev3."Item Profit Group Code PNE" <> '' then
+            exit(IWXCfgOptionChoicev3."Item Profit Group Code PNE");
 
-        if OptionChoice.Type <> OptionChoice.Type::Item then
+        if IWXCfgOptionChoicev3.Type <> IWXCfgOptionChoicev3.Type::Item then
             exit('');
 
         Item.SetLoadFields("Item Profit Group Code PTE");
-        if not Item.Get(OptionChoice."No.") then
+        if not Item.Get(IWXCfgOptionChoicev3."No.") then
             exit('');
 
         exit(Item."Item Profit Group Code PTE");
     end;
 
     procedure ApplyOptionChoiceToConfiguratorBOM(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
-        OptionChoice: Record "IWX Cfg Option Choice v3")
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     begin
-        ConfiguratorBOM."Item Profit Group Code PNE" :=
-            GetEffectiveProfitGroupCode(OptionChoice);
+        IWXConfiguratorBOMv3."Item Profit Group Code PNE" :=
+            GetEffectiveProfitGroupCode(IWXCfgOptionChoicev3);
     end;
 
     procedure ApplySelectedChoiceToConfiguratorBOM(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3")
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     var
-        OptionChoice: Record "IWX Cfg Option Choice v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
     begin
-        if ConfiguratorBOM."Choice Code" = '' then begin
-            Clear(ConfiguratorBOM."Item Profit Group Code PNE");
+        if IWXConfiguratorBOMv3."Choice Code" = '' then begin
+            Clear(IWXConfiguratorBOMv3."Item Profit Group Code PNE");
             exit;
         end;
 
-        if not OptionChoice.Get(
-            ConfiguratorBOM."Item Category Code",
-            ConfiguratorBOM."Configuration Option",
-            ConfiguratorBOM."Choice Code")
+        if not IWXCfgOptionChoicev3.Get(
+            IWXConfiguratorBOMv3."Item Category Code",
+            IWXConfiguratorBOMv3."Configuration Option",
+            IWXConfiguratorBOMv3."Choice Code")
         then begin
-            Clear(ConfiguratorBOM."Item Profit Group Code PNE");
+            Clear(IWXConfiguratorBOMv3."Item Profit Group Code PNE");
             exit;
         end;
 
         ApplyOptionChoiceToConfiguratorBOM(
-            ConfiguratorBOM,
-            OptionChoice);
+            IWXConfiguratorBOMv3,
+            IWXCfgOptionChoicev3);
     end;
 
     procedure ApplyDefaultsToConfiguratorBOM(
-        var TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary)
+        var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary)
     var
-        TempConfiguratorBOMLine: Record "IWX Configurator BOM v3" temporary;
+        TempLineIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
     begin
-        TempConfiguratorBOMLine.Copy(TempConfiguratorBOM, true);
-        if TempConfiguratorBOMLine.FindSet(true) then
+        TempLineIWXConfiguratorBOMv3.Copy(TempIWXConfiguratorBOMv3, true);
+        if TempLineIWXConfiguratorBOMv3.FindSet(true) then
             repeat
-                if TempConfiguratorBOMLine."Item Profit Group Code PNE" = '' then begin
+                if TempLineIWXConfiguratorBOMv3."Item Profit Group Code PNE" = '' then begin
                     ApplySelectedChoiceToConfiguratorBOM(
-                        TempConfiguratorBOMLine);
-                    TempConfiguratorBOMLine.Modify(false);
+                        TempLineIWXConfiguratorBOMv3);
+                    TempLineIWXConfiguratorBOMv3.Modify(false);
                 end;
-            until TempConfiguratorBOMLine.Next() = 0;
+            until TempLineIWXConfiguratorBOMv3.Next() = 0;
     end;
 
     procedure UpdateOptionChoiceUnitPrice(
-        var OptionChoice: Record "IWX Cfg Option Choice v3")
+        var IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     begin
-        if OptionChoice."Item Profit Group Code PNE" = '' then begin
-            if OptionChoice.Type = OptionChoice.Type::Item then
-                OptionChoice.UpdateUnitPrice();
+        if IWXCfgOptionChoicev3."Item Profit Group Code PNE" = '' then begin
+            if IWXCfgOptionChoicev3.Type = IWXCfgOptionChoicev3.Type::Item then
+                IWXCfgOptionChoicev3.UpdateUnitPrice();
 
             exit;
         end;
 
-        EnsureSupportedChoiceType(OptionChoice.Type);
-        UpdateOptionChoiceUnitPriceFromProfitGroup(OptionChoice);
+        EnsureSupportedChoiceType(IWXCfgOptionChoicev3.Type);
+        UpdateOptionChoiceUnitPriceFromProfitGroup(IWXCfgOptionChoicev3);
     end;
 
     procedure UpdateOptionChoiceUnitPriceFromProfitGroup(
-        var OptionChoice: Record "IWX Cfg Option Choice v3")
+        var IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     begin
-        EnsureSupportedChoiceType(OptionChoice.Type);
+        EnsureSupportedChoiceType(IWXCfgOptionChoicev3.Type);
 
-        OptionChoice."Unit Price" :=
+        IWXCfgOptionChoicev3."Unit Price" :=
             CalculateUnitPrice(
-                OptionChoice."Unit Cost",
-                OptionChoice."Item Profit Group Code PNE");
+                IWXCfgOptionChoicev3."Unit Cost",
+                IWXCfgOptionChoicev3."Item Profit Group Code PNE");
     end;
 
     procedure UpdateWhenUsedUnitPriceAfterUnitCost(
-        var OptionChoice: Record "IWX Cfg Option Choice v3")
+        var IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3")
     begin
-        if OptionChoice."Item Profit Group Code PNE" = '' then
+        if IWXCfgOptionChoicev3."Item Profit Group Code PNE" = '' then
             exit;
 
-        if OptionChoice."Update Unit Price" <>
-           OptionChoice."Update Unit Price"::"When Used"
+        if IWXCfgOptionChoicev3."Update Unit Price" <>
+           IWXCfgOptionChoicev3."Update Unit Price"::"When Used"
         then
             exit;
 
-        UpdateOptionChoiceUnitPriceFromProfitGroup(OptionChoice);
+        UpdateOptionChoiceUnitPriceFromProfitGroup(IWXCfgOptionChoicev3);
     end;
 
     procedure UpdateConfiguratorBOMUnitPrice(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3")
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     var
-        OptionChoice: Record "IWX Cfg Option Choice v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
     begin
-        if ConfiguratorBOM."Item Profit Group Code PNE" <> '' then begin
-            EnsureSupportedChoiceType(ConfiguratorBOM."Choice Type");
+        if IWXConfiguratorBOMv3."Item Profit Group Code PNE" <> '' then begin
+            EnsureSupportedChoiceType(IWXConfiguratorBOMv3."Choice Type");
 
-            ConfiguratorBOM."Unit Price" :=
+            IWXConfiguratorBOMv3."Unit Price" :=
                 CalculateUnitPrice(
-                    ConfiguratorBOM."Unit Cost",
-                    ConfiguratorBOM."Item Profit Group Code PNE");
+                    IWXConfiguratorBOMv3."Unit Cost",
+                    IWXConfiguratorBOMv3."Item Profit Group Code PNE");
             exit;
         end;
 
-        if OptionChoice.Get(
-            ConfiguratorBOM."Item Category Code",
-            ConfiguratorBOM."Configuration Option",
-            ConfiguratorBOM."Choice Code")
+        if IWXCfgOptionChoicev3.Get(
+            IWXConfiguratorBOMv3."Item Category Code",
+            IWXConfiguratorBOMv3."Configuration Option",
+            IWXConfiguratorBOMv3."Choice Code")
         then
-            ConfiguratorBOM."Unit Price" :=
-                OptionChoice."Unit Price";
+            IWXConfiguratorBOMv3."Unit Price" :=
+                IWXCfgOptionChoicev3."Unit Price";
     end;
 
     procedure CalculateUnitPrice(
@@ -137,18 +142,18 @@ codeunit 50110 "PNE IWX Pricing Mgt."
         ItemProfitGroupCode: Code[10]): Decimal
     var
         GeneralLedgerSetup: Record "General Ledger Setup";
-        ItemProfitGroup: Record "Item Profit Group PTE";
+        ItemProfitGroupPTE: Record "Item Profit Group PTE";
         ProfitPercentage: Decimal;
     begin
         if ItemProfitGroupCode = '' then
             exit(0);
 
-        if not ItemProfitGroup.Get(ItemProfitGroupCode) then
+        if not ItemProfitGroupPTE.Get(ItemProfitGroupCode) then
             Error(
                 ItemProfitGroupNotFoundErr,
                 ItemProfitGroupCode);
 
-        ProfitPercentage := ItemProfitGroup."Profit %";
+        ProfitPercentage := ItemProfitGroupPTE."Profit %";
         if ProfitPercentage >= 100 then
             Error(
                 InvalidProfitPercentageErr,

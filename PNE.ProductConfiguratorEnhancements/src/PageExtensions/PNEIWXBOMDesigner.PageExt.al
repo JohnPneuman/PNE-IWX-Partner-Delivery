@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 pageextension 50109 "PNE IWX BOM Designer" extends "IWX Configurator BOM Designer"
 {
     layout

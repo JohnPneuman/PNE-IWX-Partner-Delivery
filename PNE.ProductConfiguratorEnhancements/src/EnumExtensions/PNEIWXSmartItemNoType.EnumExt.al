@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 enumextension 50113 "PNE IWX Smart Item No. Type"
     extends "IWX Cfg. Smart Item No. Type"
 {

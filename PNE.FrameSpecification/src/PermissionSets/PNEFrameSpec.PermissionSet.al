@@ -1,3 +1,5 @@
+namespace Pneuman.FrameSpecification;
+
 permissionset 50155 "PNE Frame Spec."
 {
     Assignable = true;

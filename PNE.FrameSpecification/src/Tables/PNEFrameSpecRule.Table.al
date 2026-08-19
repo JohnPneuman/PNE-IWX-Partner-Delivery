@@ -1,3 +1,8 @@
+namespace Pneuman.FrameSpecification;
+
+using Microsoft.Inventory.Item;
+using Microsoft.Manufacturing.ProductionBOM;
+
 table 50151 "PNE Frame Spec. Rule"
 {
     Caption = 'Frame Specification Rule';
@@ -131,12 +136,12 @@ table 50151 "PNE Frame Spec. Rule"
 
     trigger OnInsert()
     var
-        FrameSpecRule: Record "PNE Frame Spec. Rule";
+        PNEFrameSpecRule: Record "PNE Frame Spec. Rule";
     begin
-        FrameSpecRule.LockTable();
-        FrameSpecRule.SetCurrentKey("Line No.");
-        if FrameSpecRule.FindLast() then
-            "Line No." := FrameSpecRule."Line No." + 10000
+        PNEFrameSpecRule.LockTable();
+        PNEFrameSpecRule.SetCurrentKey("Line No.");
+        if PNEFrameSpecRule.FindLast() then
+            "Line No." := PNEFrameSpecRule."Line No." + 10000
         else
             "Line No." := 10000;
     end;

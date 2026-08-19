@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 pageextension 50111 "PNE IWX Config. Option SF" extends "IWX Config. Option Subform"
 {
     layout

@@ -1,3 +1,5 @@
+namespace Pneuman.FrameSpecification;
+
 table 50152 "PNE Frame Spec. Line"
 {
     Caption = 'Frame Specification Line';

@@ -1,28 +1,30 @@
+namespace Pneuman.ProductConfigurator;
+
 codeunit 50114 "PNE Smart Item No. Mgt."
 {
     procedure SetOptionTextSequenceValue(
         var SequenceValue: Text;
-        SmartItemNoConfig: Record "IWX Cfg. Smart Item No. Config";
-        var TempConfiguratorBOMBuffer: Record "IWX Configurator BOM Buffer" temporary;
+        IWXCfgSmartItemNoConfig: Record "IWX Cfg. Smart Item No. Config";
+        var TempIWXConfiguratorBOMBuffer: Record "IWX Configurator BOM Buffer" temporary;
         var IsHandled: Boolean)
     var
-        TempBOMBuffer: Record "IWX Configurator BOM Buffer" temporary;
+        TempCopyIWXConfiguratorBOMBuffer: Record "IWX Configurator BOM Buffer" temporary;
     begin
-        if SmartItemNoConfig.Type <> SmartItemNoConfig.Type::"Option Text" then
+        if IWXCfgSmartItemNoConfig.Type <> IWXCfgSmartItemNoConfig.Type::"Option Text" then
             exit;
 
         IsHandled := true;
         Clear(SequenceValue);
 
-        if SmartItemNoConfig."Option Code" = '' then
+        if IWXCfgSmartItemNoConfig."Option Code" = '' then
             exit;
 
-        TempBOMBuffer.Copy(TempConfiguratorBOMBuffer, true);
-        TempBOMBuffer.SetRange(
+        TempCopyIWXConfiguratorBOMBuffer.Copy(TempIWXConfiguratorBOMBuffer, true);
+        TempCopyIWXConfiguratorBOMBuffer.SetRange(
             "Configuration Option",
-            SmartItemNoConfig."Option Code");
+            IWXCfgSmartItemNoConfig."Option Code");
 
-        if TempBOMBuffer.FindFirst() then
-            SequenceValue := TempBOMBuffer."Option Text";
+        if TempCopyIWXConfiguratorBOMBuffer.FindFirst() then
+            SequenceValue := TempCopyIWXConfiguratorBOMBuffer."Option Text";
     end;
 }

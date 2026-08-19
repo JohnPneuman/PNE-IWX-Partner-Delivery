@@ -1,22 +1,27 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Foundation.ExtendedText;
+using Microsoft.Sales.Document;
+
 codeunit 50115 "PNE IWX Extended Text Mgt."
 {
     procedure PrepareSalesExtendedText(
         var TempExtendedTextLine: Record "Extended Text Line" temporary;
         SalesLine: Record "Sales Line")
     var
-        TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
         HasIncludedItemText: Boolean;
         NextLineNo: Integer;
     begin
         if not TryLoadSalesLineConfiguration(
-            TempConfiguratorBOM,
+            TempIWXConfiguratorBOMv3,
             SalesLine)
         then
             exit;
 
         InspectConfigurationTextTypes(
-            TempConfiguratorBOM,
+            TempIWXConfiguratorBOMv3,
             ActiveConfigurationIDs,
             HasIncludedItemText);
         if not HasIncludedItemText then
@@ -27,7 +32,7 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         Clear(ActiveConfigurationIDs);
 
         BuildGroupedConfigurationText(
-            TempConfiguratorBOM,
+            TempIWXConfiguratorBOMv3,
             1,
             TempExtendedTextLine,
             ActiveConfigurationIDs,
@@ -36,45 +41,45 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
 
     procedure HasConfiguredSalesExtendedText(SalesLine: Record "Sales Line"): Boolean
     var
-        TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
         HasIncludedItemText: Boolean;
     begin
         if not TryLoadSalesLineConfiguration(
-            TempConfiguratorBOM,
+            TempIWXConfiguratorBOMv3,
             SalesLine)
         then
             exit(false);
 
         InspectConfigurationTextTypes(
-            TempConfiguratorBOM,
+            TempIWXConfiguratorBOMv3,
             ActiveConfigurationIDs,
             HasIncludedItemText);
         exit(HasIncludedItemText);
     end;
 
     local procedure TryLoadSalesLineConfiguration(
-        var TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         SalesLine: Record "Sales Line"): Boolean
     var
-        IWXSalesLineMgt: Codeunit "IWX PC Sales Line Mgt.";
+        IWXPCSalesLineMgt: Codeunit "IWX PC Sales Line Mgt.";
     begin
         if SalesLine."IWX Cfg. Configuration ID" = '' then
             exit(TryLoadCompleteItemConfiguration(
-                TempConfiguratorBOM,
+                TempIWXConfiguratorBOMv3,
                 SalesLine));
 
-        IWXSalesLineMgt.GetConfigurationWithSalesLine(
-            TempConfiguratorBOM,
+        IWXPCSalesLineMgt.GetConfigurationWithSalesLine(
+            TempIWXConfiguratorBOMv3,
             SalesLine);
-        exit(not TempConfiguratorBOM.IsEmpty());
+        exit(not TempIWXConfiguratorBOMv3.IsEmpty());
     end;
 
     local procedure TryLoadCompleteItemConfiguration(
-        var TempConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         SalesLine: Record "Sales Line"): Boolean
     var
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ConfigurationID: Code[20];
     begin
         ConfigurationID := '';
@@ -83,58 +88,58 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         then
             exit(false);
 
-        ConfiguratorBOM.SetRange(
+        IWXConfiguratorBOMv3.SetRange(
             "Configured Item No.",
             SalesLine."No.");
-        if not ConfiguratorBOM.FindSet() then
+        if not IWXConfiguratorBOMv3.FindSet() then
             exit(false);
 
         repeat
-            if ConfiguratorBOM."Configuration ID" <> '' then
+            if IWXConfiguratorBOMv3."Configuration ID" <> '' then
                 if ConfigurationID = '' then
-                    ConfigurationID := ConfiguratorBOM."Configuration ID"
+                    ConfigurationID := IWXConfiguratorBOMv3."Configuration ID"
                 else
-                    if ConfigurationID <> ConfiguratorBOM."Configuration ID" then
+                    if ConfigurationID <> IWXConfiguratorBOMv3."Configuration ID" then
                         exit(false);
-        until ConfiguratorBOM.Next() = 0;
+        until IWXConfiguratorBOMv3.Next() = 0;
 
         if ConfigurationID = '' then
             exit(false);
 
-        ConfiguratorBOM.SetRange("Configuration ID", ConfigurationID);
-        if not ConfiguratorBOM.FindSet() then
+        IWXConfiguratorBOMv3.SetRange("Configuration ID", ConfigurationID);
+        if not IWXConfiguratorBOMv3.FindSet() then
             exit(false);
 
         repeat
-            TempConfiguratorBOM.Init();
-            TempConfiguratorBOM.TransferFields(ConfiguratorBOM);
-            TempConfiguratorBOM.Insert();
-        until ConfiguratorBOM.Next() = 0;
+            TempIWXConfiguratorBOMv3.Init();
+            TempIWXConfiguratorBOMv3.TransferFields(IWXConfiguratorBOMv3);
+            TempIWXConfiguratorBOMv3.Insert();
+        until IWXConfiguratorBOMv3.Next() = 0;
 
         exit(true);
     end;
 
     local procedure BuildGroupedConfigurationText(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ParentQuantity: Decimal;
         var TempExtendedTextLine: Record "Extended Text Line" temporary;
         var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
         var NextLineNo: Integer)
     var
-        ChildConfiguratorBOM: Record "IWX Configurator BOM v3";
-        TempDisplayOrderedBOM: Record "IWX Configurator BOM v3" temporary;
-        TempDisplayOrderedChildBOM: Record "IWX Configurator BOM v3" temporary;
-        DisplayOrderedBOMLine: Record "IWX Configurator BOM v3";
+        ChildIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        TempDisplayOrderedIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
+        TempDisplayOrderedChildIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
+        DisplayOrderedLineIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ProcessedConfigurationLines: Dictionary of [Text, Boolean];
         GroupStartLineNo: Integer;
         LineQuantity: Decimal;
     begin
         CopyInOptionDisplayOrder(
-            ConfiguratorBOM,
-            TempDisplayOrderedBOM);
+            IWXConfiguratorBOMv3,
+            TempDisplayOrderedIWXConfiguratorBOMv3);
         GroupStartLineNo := NextLineNo;
         AppendCurrentConfigurationTextInDisplayOrder(
-            TempDisplayOrderedBOM,
+            TempDisplayOrderedIWXConfiguratorBOMv3,
             ParentQuantity,
             TempExtendedTextLine,
             NextLineNo);
@@ -144,94 +149,94 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
                 NextLineNo);
 
         while FindNextDisplayOrderedLine(
-            TempDisplayOrderedBOM,
+            TempDisplayOrderedIWXConfiguratorBOMv3,
             ProcessedConfigurationLines,
-            DisplayOrderedBOMLine)
+            DisplayOrderedLineIWXConfiguratorBOMv3)
         do
-            if DisplayOrderedBOMLine."Choice Configuration ID" <> '' then
+            if DisplayOrderedLineIWXConfiguratorBOMv3."Choice Configuration ID" <> '' then
                 if EnterConfiguration(
-                    DisplayOrderedBOMLine."Choice Configuration ID",
+                    DisplayOrderedLineIWXConfiguratorBOMv3."Choice Configuration ID",
                     ActiveConfigurationIDs)
                 then begin
                     SetChildConfigurationFilters(
-                        ChildConfiguratorBOM,
-                        DisplayOrderedBOMLine);
+                        ChildIWXConfiguratorBOMv3,
+                        DisplayOrderedLineIWXConfiguratorBOMv3);
                     CopyInOptionDisplayOrder(
-                        ChildConfiguratorBOM,
-                        TempDisplayOrderedChildBOM);
+                        ChildIWXConfiguratorBOMv3,
+                        TempDisplayOrderedChildIWXConfiguratorBOMv3);
                     LineQuantity :=
                         ParentQuantity *
-                        DisplayOrderedBOMLine."Quantity per Unit";
+                        DisplayOrderedLineIWXConfiguratorBOMv3."Quantity per Unit";
                     BuildGroupedConfigurationText(
-                        TempDisplayOrderedChildBOM,
+                        TempDisplayOrderedChildIWXConfiguratorBOMv3,
                         LineQuantity,
                         TempExtendedTextLine,
                         ActiveConfigurationIDs,
                         NextLineNo);
                     ActiveConfigurationIDs.Remove(
-                        DisplayOrderedBOMLine."Choice Configuration ID");
-                    TempDisplayOrderedChildBOM.Reset();
-                    TempDisplayOrderedChildBOM.DeleteAll();
+                        DisplayOrderedLineIWXConfiguratorBOMv3."Choice Configuration ID");
+                    TempDisplayOrderedChildIWXConfiguratorBOMv3.Reset();
+                    TempDisplayOrderedChildIWXConfiguratorBOMv3.DeleteAll();
                 end;
     end;
 
     local procedure AppendCurrentConfigurationTextInDisplayOrder(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         ParentQuantity: Decimal;
         var TempExtendedTextLine: Record "Extended Text Line" temporary;
         var NextLineNo: Integer)
     var
-        DisplayOrderedBOMLine: Record "IWX Configurator BOM v3";
-        TempSingleConfiguratorBOM: Record "IWX Configurator BOM v3" temporary;
+        DisplayOrderedLineIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        TempSingleIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         TempSingleExtendedTextLine: Record "Extended Text Line" temporary;
-        OptionChoice: Record "IWX Cfg Option Choice v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
         IWXConfiguratorTextMgt: Codeunit "IWX Configurator Text Mgt.";
         ProcessedConfigurationLines: Dictionary of [Text, Boolean];
         LineQuantity: Decimal;
     begin
         while FindNextDisplayOrderedLine(
-            ConfiguratorBOM,
+            IWXConfiguratorBOMv3,
             ProcessedConfigurationLines,
-            DisplayOrderedBOMLine)
+            DisplayOrderedLineIWXConfiguratorBOMv3)
         do
             if TryGetSelectedOptionChoice(
-                DisplayOrderedBOMLine,
-                OptionChoice)
+                DisplayOrderedLineIWXConfiguratorBOMv3,
+                IWXCfgOptionChoicev3)
             then
-                if (OptionChoice.Type = OptionChoice.Type::Item) and
-                   (OptionChoice."Add Extended Text" =
-                    OptionChoice."Add Extended Text"::"Include Item Extended Text")
+                if (IWXCfgOptionChoicev3.Type = IWXCfgOptionChoicev3.Type::Item) and
+                   (IWXCfgOptionChoicev3."Add Extended Text" =
+                    IWXCfgOptionChoicev3."Add Extended Text"::"Include Item Extended Text")
                 then begin
                     LineQuantity :=
                         ParentQuantity *
-                        DisplayOrderedBOMLine."Quantity per Unit";
+                        DisplayOrderedLineIWXConfiguratorBOMv3."Quantity per Unit";
                     if LineQuantity <> 0 then
                         AppendDutchItemExtendedText(
-                            OptionChoice."No.",
+                            IWXCfgOptionChoicev3."No.",
                             LineQuantity,
                             TempExtendedTextLine,
                             NextLineNo);
                 end else begin
-                    TempSingleConfiguratorBOM.Copy(
-                        ConfiguratorBOM,
+                    TempSingleIWXConfiguratorBOMv3.Copy(
+                        IWXConfiguratorBOMv3,
                         true);
-                    TempSingleConfiguratorBOM.SetRange(
+                    TempSingleIWXConfiguratorBOMv3.SetRange(
                         "Item Category Code",
-                        DisplayOrderedBOMLine."Item Category Code");
-                    TempSingleConfiguratorBOM.SetRange(
+                        DisplayOrderedLineIWXConfiguratorBOMv3."Item Category Code");
+                    TempSingleIWXConfiguratorBOMv3.SetRange(
                         "Configuration Option",
-                        DisplayOrderedBOMLine."Configuration Option");
-                    TempSingleConfiguratorBOM.SetRange(
+                        DisplayOrderedLineIWXConfiguratorBOMv3."Configuration Option");
+                    TempSingleIWXConfiguratorBOMv3.SetRange(
                         "Configured Item No.",
-                        DisplayOrderedBOMLine."Configured Item No.");
+                        DisplayOrderedLineIWXConfiguratorBOMv3."Configured Item No.");
                     IWXConfiguratorTextMgt.BuildTempExtendedTextWithConfiguratorBOM(
                         TempSingleExtendedTextLine,
-                        TempSingleConfiguratorBOM);
+                        TempSingleIWXConfiguratorBOMv3);
                     AppendIWXTextLines(
                         TempSingleExtendedTextLine,
                         TempExtendedTextLine,
                         NextLineNo);
-                    TempSingleConfiguratorBOM.Reset();
+                    TempSingleIWXConfiguratorBOMv3.Reset();
                     TempSingleExtendedTextLine.Reset();
                     TempSingleExtendedTextLine.DeleteAll();
                 end;
@@ -253,170 +258,170 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
     end;
 
     local procedure CopyInOptionDisplayOrder(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
-        var TempDisplayOrderedBOM: Record "IWX Configurator BOM v3" temporary)
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        var TempDisplayOrderedIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary)
     var
-        ConfiguratorOption: Record "IWX Configurator Option v3";
+        IWXConfiguratorOptionv3: Record "IWX Configurator Option v3";
     begin
-        TempDisplayOrderedBOM.Reset();
-        TempDisplayOrderedBOM.DeleteAll();
+        TempDisplayOrderedIWXConfiguratorBOMv3.Reset();
+        TempDisplayOrderedIWXConfiguratorBOMv3.DeleteAll();
 
-        if ConfiguratorBOM.FindSet() then
+        if IWXConfiguratorBOMv3.FindSet() then
             repeat
-                TempDisplayOrderedBOM.Init();
-                TempDisplayOrderedBOM.TransferFields(ConfiguratorBOM);
+                TempDisplayOrderedIWXConfiguratorBOMv3.Init();
+                TempDisplayOrderedIWXConfiguratorBOMv3.TransferFields(IWXConfiguratorBOMv3);
                 if FindConfiguratorOption(
-                    ConfiguratorBOM,
-                    ConfiguratorOption)
+                    IWXConfiguratorBOMv3,
+                    IWXConfiguratorOptionv3)
                 then
-                    TempDisplayOrderedBOM."Display Order" :=
-                        ConfiguratorOption."Display Order";
-                TempDisplayOrderedBOM.Insert();
-            until ConfiguratorBOM.Next() = 0;
+                    TempDisplayOrderedIWXConfiguratorBOMv3."Display Order" :=
+                        IWXConfiguratorOptionv3."Display Order";
+                TempDisplayOrderedIWXConfiguratorBOMv3.Insert();
+            until IWXConfiguratorBOMv3.Next() = 0;
 
-        TempDisplayOrderedBOM.SetCurrentKey("Display Order");
-        TempDisplayOrderedBOM.SetAscending("Display Order", true);
+        TempDisplayOrderedIWXConfiguratorBOMv3.SetCurrentKey("Display Order");
+        TempDisplayOrderedIWXConfiguratorBOMv3.SetAscending("Display Order", true);
     end;
 
     local procedure FindConfiguratorOption(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
-        var ConfiguratorOption: Record "IWX Configurator Option v3"): Boolean
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorOptionv3: Record "IWX Configurator Option v3"): Boolean
     begin
-        if ConfiguratorOption.Get(
-            ConfiguratorBOM."Item Category Code",
-            ConfiguratorBOM."Configuration Option")
+        if IWXConfiguratorOptionv3.Get(
+            IWXConfiguratorBOMv3."Item Category Code",
+            IWXConfiguratorBOMv3."Configuration Option")
         then
             exit(true);
 
-        ConfiguratorOption.Reset();
-        ConfiguratorOption.SetRange(
+        IWXConfiguratorOptionv3.Reset();
+        IWXConfiguratorOptionv3.SetRange(
             Code,
-            ConfiguratorBOM."Configuration Option");
-        exit(ConfiguratorOption.FindFirst());
+            IWXConfiguratorBOMv3."Configuration Option");
+        exit(IWXConfiguratorOptionv3.FindFirst());
     end;
 
     local procedure FindNextDisplayOrderedLine(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         var ProcessedConfigurationLines: Dictionary of [Text, Boolean];
-        var DisplayOrderedBOMLine: Record "IWX Configurator BOM v3"): Boolean
+        var DisplayOrderedLineIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3"): Boolean
     var
         ConfigurationLineKey: Text;
         HasCandidate: Boolean;
     begin
-        if ConfiguratorBOM.FindSet() then
+        if IWXConfiguratorBOMv3.FindSet() then
             repeat
                 ConfigurationLineKey :=
-                    GetConfigurationLineKey(ConfiguratorBOM);
+                    GetConfigurationLineKey(IWXConfiguratorBOMv3);
                 if not ProcessedConfigurationLines.ContainsKey(
                     ConfigurationLineKey)
                 then
                     if (not HasCandidate) or
                        IsBeforeDisplayOrderedLine(
-                            ConfiguratorBOM,
-                            DisplayOrderedBOMLine)
+                            IWXConfiguratorBOMv3,
+                            DisplayOrderedLineIWXConfiguratorBOMv3)
                     then begin
-                        DisplayOrderedBOMLine := ConfiguratorBOM;
+                        DisplayOrderedLineIWXConfiguratorBOMv3 := IWXConfiguratorBOMv3;
                         HasCandidate := true;
                     end;
-            until ConfiguratorBOM.Next() = 0;
+            until IWXConfiguratorBOMv3.Next() = 0;
 
         if not HasCandidate then
             exit(false);
 
         ProcessedConfigurationLines.Add(
-            GetConfigurationLineKey(DisplayOrderedBOMLine),
+            GetConfigurationLineKey(DisplayOrderedLineIWXConfiguratorBOMv3),
             true);
         exit(true);
     end;
 
     local procedure IsBeforeDisplayOrderedLine(
-        CandidateBOMLine: Record "IWX Configurator BOM v3";
-        CurrentBOMLine: Record "IWX Configurator BOM v3"): Boolean
+        CandidateIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        CurrentIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3"): Boolean
     begin
-        if CandidateBOMLine."Display Order" <>
-           CurrentBOMLine."Display Order"
+        if CandidateIWXConfiguratorBOMv3."Display Order" <>
+           CurrentIWXConfiguratorBOMv3."Display Order"
         then
             exit(
-                CandidateBOMLine."Display Order" <
-                CurrentBOMLine."Display Order");
+                CandidateIWXConfiguratorBOMv3."Display Order" <
+                CurrentIWXConfiguratorBOMv3."Display Order");
 
         exit(
-            CandidateBOMLine."Configuration Option" <
-            CurrentBOMLine."Configuration Option");
+            CandidateIWXConfiguratorBOMv3."Configuration Option" <
+            CurrentIWXConfiguratorBOMv3."Configuration Option");
     end;
 
     local procedure GetConfigurationLineKey(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3"): Text
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3"): Text
     begin
         exit(
             StrSubstNo(
                 '%1\%2\%3',
-                ConfiguratorBOM."Item Category Code",
-                ConfiguratorBOM."Configuration Option",
-                ConfiguratorBOM."Configured Item No."));
+                IWXConfiguratorBOMv3."Item Category Code",
+                IWXConfiguratorBOMv3."Configuration Option",
+                IWXConfiguratorBOMv3."Configured Item No."));
     end;
 
     local procedure InspectConfigurationTextTypes(
-        var ConfiguratorBOM: Record "IWX Configurator BOM v3";
+        var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
         var HasIncludedItemText: Boolean)
     var
-        ChildConfiguratorBOM: Record "IWX Configurator BOM v3";
-        OptionChoice: Record "IWX Cfg Option Choice v3";
+        ChildIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
     begin
-        if ConfiguratorBOM.FindSet() then
+        if IWXConfiguratorBOMv3.FindSet() then
             repeat
-                if TryGetSelectedOptionChoice(ConfiguratorBOM, OptionChoice) then
-                    if OptionChoice."Add Extended Text" =
-                       OptionChoice."Add Extended Text"::"Include Item Extended Text"
+                if TryGetSelectedOptionChoice(IWXConfiguratorBOMv3, IWXCfgOptionChoicev3) then
+                    if IWXCfgOptionChoicev3."Add Extended Text" =
+                       IWXCfgOptionChoicev3."Add Extended Text"::"Include Item Extended Text"
                     then
                         HasIncludedItemText := true;
 
-                if ConfiguratorBOM."Choice Configuration ID" <> '' then
+                if IWXConfiguratorBOMv3."Choice Configuration ID" <> '' then
                     if EnterConfiguration(
-                        ConfiguratorBOM."Choice Configuration ID",
+                        IWXConfiguratorBOMv3."Choice Configuration ID",
                         ActiveConfigurationIDs)
                     then begin
                         SetChildConfigurationFilters(
-                            ChildConfiguratorBOM,
-                            ConfiguratorBOM);
+                            ChildIWXConfiguratorBOMv3,
+                            IWXConfiguratorBOMv3);
                         InspectConfigurationTextTypes(
-                            ChildConfiguratorBOM,
+                            ChildIWXConfiguratorBOMv3,
                             ActiveConfigurationIDs,
                             HasIncludedItemText);
                         ActiveConfigurationIDs.Remove(
-                            ConfiguratorBOM."Choice Configuration ID");
+                            IWXConfiguratorBOMv3."Choice Configuration ID");
                     end;
-            until ConfiguratorBOM.Next() = 0;
+            until IWXConfiguratorBOMv3.Next() = 0;
     end;
 
     local procedure TryGetSelectedOptionChoice(
-        ConfiguratorBOM: Record "IWX Configurator BOM v3";
-        var OptionChoice: Record "IWX Cfg Option Choice v3"): Boolean
+        IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        var IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3"): Boolean
     begin
-        if ConfiguratorBOM."Choice Code" = '' then
+        if IWXConfiguratorBOMv3."Choice Code" = '' then
             exit(false);
 
         exit(
-            OptionChoice.Get(
-                ConfiguratorBOM."Item Category Code",
-                ConfiguratorBOM."Configuration Option",
-                ConfiguratorBOM."Choice Code"));
+            IWXCfgOptionChoicev3.Get(
+                IWXConfiguratorBOMv3."Item Category Code",
+                IWXConfiguratorBOMv3."Configuration Option",
+                IWXConfiguratorBOMv3."Choice Code"));
     end;
 
     local procedure SetChildConfigurationFilters(
-        var ChildConfiguratorBOM: Record "IWX Configurator BOM v3";
-        ParentConfiguratorBOM: Record "IWX Configurator BOM v3")
+        var ChildIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        ParentIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
     begin
-        ChildConfiguratorBOM.Reset();
-        ChildConfiguratorBOM.SetRange(
+        ChildIWXConfiguratorBOMv3.Reset();
+        ChildIWXConfiguratorBOMv3.SetRange(
             "Configuration ID",
-            ParentConfiguratorBOM."Choice Configuration ID");
-        if ParentConfiguratorBOM."Choice Configured Item No." <> '' then
-            ChildConfiguratorBOM.SetRange(
+            ParentIWXConfiguratorBOMv3."Choice Configuration ID");
+        if ParentIWXConfiguratorBOMv3."Choice Configured Item No." <> '' then
+            ChildIWXConfiguratorBOMv3.SetRange(
                 "Configured Item No.",
-                ParentConfiguratorBOM."Choice Configured Item No.");
-        ChildConfiguratorBOM.SetCurrentKey("Display Order");
+                ParentIWXConfiguratorBOMv3."Choice Configured Item No.");
+        ChildIWXConfiguratorBOMv3.SetCurrentKey("Display Order");
     end;
 
     local procedure EnterConfiguration(

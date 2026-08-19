@@ -1,3 +1,5 @@
+namespace Pneuman.ProductConfigurator;
+
 tableextension 50105 "PNE IWX Option Choice" extends "IWX Cfg Option Choice v3"
 {
     fields
@@ -11,9 +13,9 @@ tableextension 50105 "PNE IWX Option Choice" extends "IWX Cfg Option Choice v3"
 
             trigger OnValidate()
             var
-                IWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
+                PNEIWXPricingMgt: Codeunit "PNE IWX Pricing Mgt.";
             begin
-                IWXPricingMgt.UpdateOptionChoiceUnitPrice(Rec);
+                PNEIWXPricingMgt.UpdateOptionChoiceUnitPrice(Rec);
             end;
         }
     }

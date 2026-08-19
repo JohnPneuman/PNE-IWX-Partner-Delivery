@@ -1,3 +1,5 @@
+namespace Pneuman.FrameSpecification;
+
 enum 50150 "PNE Frame Spec. Line Type"
 {
     Extensible = false;

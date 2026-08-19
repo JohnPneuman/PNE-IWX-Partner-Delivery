@@ -1,3 +1,5 @@
+namespace Pneuman.FrameSpecification;
+
 page 50157 "PNE Frame Spec. Test"
 {
     ApplicationArea = All;
@@ -46,16 +48,16 @@ page 50157 "PNE Frame Spec. Test"
 
     local procedure CreatePreview()
     var
-        TempFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
-        FrameSpecMgt: Codeunit "PNE Frame Spec. Mgt.";
-        FrameSpecPreview: Page "PNE Frame Spec. Preview";
+        TempPNEFrameSpecLine: Record "PNE Frame Spec. Line" temporary;
+        PNEFrameSpecMgt: Codeunit "PNE Frame Spec. Mgt.";
+        PNEFrameSpecPreview: Page "PNE Frame Spec. Preview";
     begin
         if ConfigurationID = '' then
             Error(ConfigurationRequiredErr);
 
-        FrameSpecMgt.BuildLinesFromConfigurationID(ConfigurationID, TempFrameSpecLine);
-        FrameSpecPreview.SetLines(TempFrameSpecLine);
-        FrameSpecPreview.RunModal();
+        PNEFrameSpecMgt.BuildLinesFromConfigurationID(ConfigurationID, TempPNEFrameSpecLine);
+        PNEFrameSpecPreview.SetLines(TempPNEFrameSpecLine);
+        PNEFrameSpecPreview.RunModal();
     end;
 
     var

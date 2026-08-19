@@ -1,6 +1,10 @@
 {
     "al.enableCodeAnalysis": true,
+    "al.backgroundCodeAnalysis": "Project",
     "al.enableCodeActions": true,
+    "al.outputAnalyzerStatistics": true,
+    "al.packageCachePath": "./.alpackages",
+    "al.namespaceTemplate": "Pneuman.ProductConfigurator",
     "al.codeAnalyzers": [
         "${CodeCop}",
         "${UICop}",

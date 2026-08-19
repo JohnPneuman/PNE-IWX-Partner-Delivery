@@ -1,3 +1,7 @@
+namespace Pneuman.FrameSpecification;
+
+using Microsoft.Manufacturing.ProductionBOM;
+
 page 50161 "PNE Frame BOM Components"
 {
     ApplicationArea = All;

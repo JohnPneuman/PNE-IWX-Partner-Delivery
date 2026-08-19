@@ -1,9 +1,14 @@
+namespace Pneuman.ProductConfigurator;
+
+using Microsoft.Inventory.Item;
+using Microsoft.Manufacturing.ProductionBOM;
+
 codeunit 50104 "PNE Production BOM Cost Mgt."
 {
     // Berekent uitsluitend de non-inventory kosten.
     //
     // De normale inventory-kosten zijn al door IWX berekend
-    // en staan al in OptionChoice."Unit Cost".
+    // en staan al in IWXCfgOptionChoicev3."Unit Cost".
     procedure CalculateNonInventoryBOMCost(
         ProductionBOMNo: Code[20];
         CalculationDate: Date): Decimal
