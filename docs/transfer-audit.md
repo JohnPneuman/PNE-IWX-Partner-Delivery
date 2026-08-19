@@ -49,13 +49,17 @@ acceptance. The required regression scenarios remain in `test-plan.md` and
 
 ## Build and acceptance status
 
-- Product Configurator Enhancements compiled locally against Product
-  Configurator 4.1.9649.1 and Blue Ace Pneuman 1.0.202606.5 using AL compiler
+- Both apps completed the standard repository validation against exact local
+  Business Central 28.3 and dependency symbols using AL compiler
   17.0.34.45391.
-- CodeCop, UICop, and PerTenantExtensionCop reported 0 errors and 0 warnings.
-  The 17 AA0247 namespace diagnostics are documented informational baseline
-  entries.
-- The `{I_FA}` Item Disc. Group conversion scenario was confirmed in Sandbox.
-- Before a release decision, Blu Ace must execute and retain the remaining
-  applicable scenarios in the two test plans, including existing IWX Business
-  Rules regression behavior.
+- CodeCop, UICop, and PerTenantExtensionCop ran with warnings as errors and
+  reported 0 errors, 0 warnings, and 0 informational diagnostics for both apps.
+- Every object now has its approved Pneuman namespace. The public-symbol and
+  Sandbox-upgrade risks are documented in `namespace-compatibility-audit.md`.
+- A previous handover note reported the `{I_FA}` Item Disc. Group conversion
+  scenario as confirmed in Sandbox, but the repository contains no dated test
+  record, environment reference, executor, or result artifact. Treat this
+  scenario as unverified until it is rerun and evidence is retained.
+- Before a release decision, Blu Ace must execute and retain all applicable
+  scenarios in the two test plans, including existing IWX Business Rules
+  regression behavior.

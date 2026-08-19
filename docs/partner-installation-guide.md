@@ -164,9 +164,21 @@ executed evidence with the release decision.
 
 ## Support handover
 
+When source is transferred, create the archive from reviewed committed files
+with the `git archive` procedure in
+[development-setup.md](development-setup.md). Do not zip a working directory
+that may contain ignored proprietary symbols, generated packages, local launch
+settings, or credentials.
+
 For an issue, capture the package version, dependency versions, affected IWX
 option/configuration, selected BOM or Item, work date, expected and actual
 Unit Cost/Unit Price, and a reproducible Sandbox scenario. Consult
 [functional-specification.md](functional-specification.md) for the intended
 business outcome and [current-behavior.md](current-behavior.md) for technical
 edge cases.
+
+For source onboarding, Workspace Trust, exact symbol acquisition, formatting,
+the standard warnings-as-errors build, analyzer evidence, and troubleshooting,
+follow [development-setup.md](development-setup.md). Before upgrading a build
+that introduces namespaces, complete the external-consumer and Sandbox checks
+in [namespace-compatibility-audit.md](namespace-compatibility-audit.md).

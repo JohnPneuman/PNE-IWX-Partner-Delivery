@@ -2,8 +2,9 @@
 
 This folder is a self-contained source delivery for Blu Ace. It contains only
 what is needed to review, compile, modify, test, and package the extension. It
-does not include Pneuman's agent instructions, Git history, internal use cases,
-downloaded symbols, local launch settings, generated packages, or credentials.
+includes delivery-scoped agent quality instructions, but not Pneuman's internal
+use cases, downloaded symbols, local launch settings, generated packages, or
+credentials. A clean exported archive does not include Git history.
 
 ## Contents
 
@@ -53,16 +54,17 @@ Business Central report-layout selection without changing AL code.
 
 ## Build handover
 
-1. Open the required app folder as the AL project folder in VS Code.
-2. Install or select a Business Central 28/runtime 17-compatible AL Language
-   extension.
-3. Acquire symbols for the exact Product Configurator and, for Product
-   Configurator Enhancements, Blue Ace versions in the relevant `app.json`; do
-   not copy symbols from this delivery.
-4. Run the AL formatter on changed AL files and package with CodeCop, UICop,
-   and PerTenantExtensionCop enabled by `.vscode/settings.json`.
-5. Resolve every compiler error and report all remaining diagnostics. Perform
-   the relevant Sandbox tests in `docs/test-plan.md` before release.
+1. Review the source, then grant Workspace Trust only if appropriate.
+2. Open `PNE-IWX-Extensions.code-workspace` and install the recommended official
+   Microsoft AL Language extension.
+3. Run `AL: Setup check`.
+4. Download exact symbols separately for each app as described in
+   `docs/development-setup.md`; do not copy symbols from this delivery.
+5. Run the Microsoft AL formatter on changed files and the default
+   `AL: Validate all PTE apps` task.
+6. Require zero errors and warnings from CodeCop, UICop, and
+   PerTenantExtensionCop and report every Info diagnostic.
+7. Perform and retain the relevant Sandbox tests before release.
 
 No package is supplied in this source delivery. Build a new package from the
 reviewed source, preserve the app ID and all existing object/field IDs, and do
@@ -76,3 +78,15 @@ If Blu Ace returns changes, merge them into the main repository through a
 normal review, compile, and Sandbox-validation process. Create a fresh export
 after the reviewed change; do not copy local symbol folders, `.app` files,
 launch settings, credentials, or unrelated internal documentation into it.
+
+This directory can contain ignored local artifacts on a development machine.
+Never create the handover by zipping the working directory in File Explorer.
+After committing the reviewed delivery state, export tracked files only:
+
+```powershell
+git archive --format=zip --output PNE-IWX-Extensions-partner-delivery.zip HEAD
+```
+
+Inspect the archive contents before transfer. It must not contain `.git`,
+`.app`, `.alpackages`, `.build`, snapshots, `launch.json`, `rad.json`, or
+credentials.

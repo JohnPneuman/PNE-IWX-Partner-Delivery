@@ -151,6 +151,11 @@ Price when no profit group is selected.
 
 ## Configured Item Template default scenarios
 
+Evidence status: the repository contains no retained, dated Sandbox result for
+the previously reported `{I_FA}` conversion test. Rerun the scenarios below
+and retain the environment, app/dependency versions, executor, date, expected
+result, actual result, and release decision.
+
 - **Choice Code mapping:** an Item category with a Data Template whose Item
   Disc. Group Default Value is `{I_FA}` replaces the placeholder before
   standard validation and creates an Item with the selected `I_FA` Choice Code
