@@ -1,0 +1,11 @@
+{
+    "name": "PNE AL Quality Baseline",
+    "description": "Preserves analyzer defaults and promotes verified objective AL quality rules.",
+    "rules": [
+        {
+            "id": "AA0021",
+            "action": "Error",
+            "justification": "Enforces deterministic variable declaration ordering by AL object type."
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+# Build output and downloaded symbols are local-only.
+**/.alpackages/
+**/.build/
+**/.snapshots/
+**/*.app
+
+# Launch configuration may contain tenant information.
+**/.vscode/launch.json
+**/.vscode/rad.json
