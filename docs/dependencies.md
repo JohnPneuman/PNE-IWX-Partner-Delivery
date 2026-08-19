@@ -44,6 +44,9 @@ Used events and subscriber signatures:
 - Codeunit `Transfer Extended Text` event `OnBeforeSalesCheckIfAnyExtText`:
   `var Record "Sales Line"`, `Record "Sales Header"`, `Boolean`,
   `var Boolean`, `var Boolean`, `var Boolean`, `var Boolean`.
+- Codeunit `IWX Configurator Mgmt.` event
+  `OnAfterCreateItemWithConfiguratorBOM`: `Record Item`,
+  `var Record "IWX Configurator BOM v3"`.
 
 Fields and methods used include Item Category Code, Configuration Option,
 Additional Choices Type, Additional Choices Filter, Code, Type, No.,
@@ -51,6 +54,10 @@ Description, Variant Code, Unit Price, Unit Cost, Unit of Measure Code,
 Ext. Text Template, Image Set Code, Default Quantity, Choice fields,
 Quantity per Unit, Smart Item Number Type, Option Code, Option Text,
 `UpdateUnitCost`, and `GetRoutingLinkCode`.
+
+The optional Item Disc. Group mapping also reads IWX Configurator Item Category
+field `Data Template` and standard `Config. Template Line` fields `Data
+Template Code`, `Table ID`, `Field ID`, and `Default Value`.
 
 After an IWX upgrade, inspect the actual symbols before compiling: confirm all
 used events and `var`/temporary semantics, keys, enum values, Type/No.

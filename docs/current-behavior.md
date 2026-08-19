@@ -156,3 +156,18 @@ from an Include choice that still has an Ext. Text Template value, are ignored.
 An `Include Item Extended Text` choice with no valid Dutch text, or with an
 empty Extended Text Line, contributes no document line. This allows the mode
 to be enabled broadly for hardware choices without producing `1x` blank text.
+
+## Configured Item Template defaults
+
+When IWX creates an Item from a configurator category whose Data Template has
+an Item Disc. Group Config. Template Line with a Default Value in the exact
+form `{<Option Code>}`, the app replaces that placeholder with the selected
+Choice Code from the top-level configuration. For example, `{I_FA}` assigns
+the selected `I_FA` Choice Code. A missing or blank choice explicitly clears
+the new Item's Item Disc. Group. Other template fields and values are left to
+standard IWX and Business Central template processing.
+
+The mapping runs after IWX Item creation through its public event and validates
+the Item field before modifying it. It does not change the Config. Template,
+IWX configuration, or IWX Business Rules. No `Commit()` is used, so an invalid
+Choice Code fails and rolls back the surrounding Item-creation transaction.

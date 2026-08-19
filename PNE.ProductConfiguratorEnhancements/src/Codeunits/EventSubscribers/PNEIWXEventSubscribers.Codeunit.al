@@ -210,6 +210,24 @@ codeunit 50101 "PNE IWX Event Subscribers"
         IsHandled := true;
     end;
 
+    [EventSubscriber(
+        ObjectType::Codeunit,
+        Codeunit::"IWX Configurator Mgmt.",
+        OnAfterCreateItemWithConfiguratorBOM,
+        '',
+        false,
+        false)]
+    local procedure ApplyConfiguredItemTemplateDefaults(
+        precItem: Record Item;
+        var precIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3")
+    var
+        IWXItemTemplateMgt: Codeunit "PNE IWX Item Template Mgt.";
+    begin
+        IWXItemTemplateMgt.ApplyConfiguredItemDiscGroup(
+            precItem,
+            precIWXConfiguratorBOMv3);
+    end;
+
 
     var
         IsPreparingConfiguredSalesExtendedText: Boolean;

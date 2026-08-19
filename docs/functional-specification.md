@@ -117,6 +117,21 @@ and Extended Text master data are not changed, and repeated/circular child
 configuration references result in controlled behavior rather than duplicate
 text.
 
+## 6. Configured Item Template default
+
+An IWX Item Category can refer to a standard Business Central Data Template.
+When the Item Disc. Group line in that template has a Default Value in the
+exact form `{<Option Code>}`, the app resolves the selected Choice Code from
+the top-level configuration after IWX creates the Item. For example, `{I_FA}`
+sets Item Disc. Group to the selected `I_FA` Choice Code.
+
+A blank or missing choice explicitly clears Item Disc. Group. Literal values
+and all other Config. Template fields remain under standard IWX and Business
+Central processing. The app neither changes the template nor handles an IWX
+Business Rule event; it validates the Item Disc. Group through the public IWX
+post-creation event and relies on the surrounding transaction to roll back an
+invalid code.
+
 ## Boundaries and upgrade impact
 
 The app contains event subscribers, table/page extensions, enum extensions,

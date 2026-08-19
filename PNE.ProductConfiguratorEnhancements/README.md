@@ -59,6 +59,15 @@ Only the explicit `Option Text` type is handled by this app. Existing IWX Smart
 Item Number component types and the surrounding IWX number composition,
 normalization, length, and uniqueness behavior remain under IWX control.
 
+## Configured Item Template default
+
+For an IWX Item Category with a Data Template, an Item Disc. Group Config.
+Template Line can use an exact placeholder such as `{I_FA}` as its Default
+Value. When IWX creates the Item, the app replaces it with the selected `I_FA`
+Choice Code. A blank or missing choice clears Item Disc. Group. Literal default
+values and all fields other than Item Disc. Group retain standard IWX and
+Business Central template behavior.
+
 ## Configured Sales Line extended text
 
 When Business Central inserts extended text for a Sales Line linked to an IWX

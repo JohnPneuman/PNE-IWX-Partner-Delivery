@@ -36,6 +36,11 @@ Specification has no event subscribers; it reads configuration data into
 temporary buffers and does not modify Product Configurator records. Its frame
 rules are Pneuman-owned report configuration, not IWX Business Rules.
 
+Product Configurator Enhancements can optionally map an exact Config. Template
+Item Disc. Group placeholder such as `{I_FA}` to the selected IWX Choice Code.
+It reads, but never changes, the IWX Data Template and Business Central Config.
+Template Line, and does not handle a Business Rule event.
+
 ## Frame Specification template
 
 Report 50158 `PNE Frame Specification` uses the Word template

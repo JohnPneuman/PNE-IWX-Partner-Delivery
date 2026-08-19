@@ -26,6 +26,12 @@ Custom Smart Item Number, pricing, and extended-text handling use their
 specific public IWX extension points. Their `IsHandled` behavior is scoped to
 those extension points; it does not suppress IWX Business Rules.
 
+The optional Item Disc. Group placeholder mapping listens only to the public
+post-Item-creation event. It reads the existing IWX Data Template reference and
+the standard Config. Template Line but never changes either record. It writes
+only the newly created Item's validated Item Disc. Group and does not handle a
+Business Rule event.
+
 ## PNE Frame Specification
 
 The app has no event subscribers. It reads `IWX Configurator BOM v3` records

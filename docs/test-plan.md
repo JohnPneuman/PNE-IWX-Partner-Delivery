@@ -149,6 +149,22 @@ Price when no profit group is selected.
 - **Circular child configuration:** traversal stops with a clear error.
 - **No master-data mutation:** Extended Text Header and Line remain unchanged.
 
+## Configured Item Template default scenarios
+
+- **Choice Code mapping:** an Item category with a Data Template whose Item
+  Disc. Group Default Value is `{I_FA}` creates an Item with the selected
+  `I_FA` Choice Code as Item Disc. Group.
+- **Blank choice:** a blank or missing `I_FA` selection creates the Item with a
+  blank Item Disc. Group rather than retaining the literal placeholder.
+- **No placeholder:** a literal Item Disc. Group Default Value retains standard
+  IWX and Business Central Config. Template behavior.
+- **Other fields:** placeholders on fields other than Item Disc. Group remain
+  untouched by this feature.
+- **Invalid choice:** a selected Choice Code invalid for Item Disc. Group stops
+  Item creation without a partially updated Item.
+- **No IWX mutation:** Config. Template records, IWX Configurator BOM records,
+  and IWX Business Rules remain unchanged after Item creation.
+
 ## Future automated AL tests
 
 The first test app should cover Non-Inventory-only cost, mixed cost, nested BOM,
