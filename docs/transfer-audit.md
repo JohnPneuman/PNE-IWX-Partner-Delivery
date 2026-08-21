@@ -54,6 +54,9 @@ acceptance. The required regression scenarios remain in `test-plan.md` and
   17.0.34.45391.
 - CodeCop, UICop, and PerTenantExtensionCop ran with warnings as errors and
   reported 0 errors, 0 warnings, and 0 informational diagnostics for both apps.
+- Frame Specification 1.0.0.6 exposes the existing report only on Simulated,
+  Firm Planned and Released Production Order; it introduces no IWX subscriber,
+  IWX write or Business Rule interaction.
 - Every object now has its approved Pneuman namespace. The public-symbol and
   Sandbox-upgrade risks are documented in `namespace-compatibility-audit.md`.
 - A previous handover note reported the `{I_FA}` Item Disc. Group conversion

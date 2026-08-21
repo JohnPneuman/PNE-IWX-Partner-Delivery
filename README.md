@@ -10,8 +10,8 @@ credentials. A clean exported archive does not include Git history.
 
 - `PNE.ProductConfiguratorEnhancements/`: compile-ready AL project, including
   `app.json`, AL source, analyzer settings, and the app's technical README.
-- `PNE.FrameSpecification/`: compile-ready AL project for the released
-  production-order frame-specification report, including its Word layout
+- `PNE.FrameSpecification/`: compile-ready AL project for the Simulated, Firm
+  Planned and Released production-order frame-specification report, including its Word layout
   `Layouts/PNEFrameSpecification.docx`.
 - `docs/partner-installation-guide.md`: installation, configuration, and
   acceptance handover.

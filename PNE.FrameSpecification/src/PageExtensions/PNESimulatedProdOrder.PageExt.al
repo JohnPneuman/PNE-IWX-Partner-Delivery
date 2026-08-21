@@ -2,7 +2,7 @@ namespace Pneuman.FrameSpecification;
 
 using Microsoft.Manufacturing.Document;
 
-pageextension 50159 "PNE Released Prod. Order" extends "Released Production Order"
+pageextension 50163 "PNE Simulated Prod. Order" extends "Simulated Production Order"
 {
     actions
     {

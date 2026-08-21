@@ -173,3 +173,11 @@ It does not change the Config. Template, IWX configuration, or IWX Business
 Rules. It validates the active template `FieldRef` without retrieving the
 not-yet-inserted Item. No `Commit()` is used, so an invalid Choice Code fails
 and rolls back the surrounding Item-creation transaction.
+
+## Frame Specification production-order action
+
+PNE Frame Specification 1.0.0.6 adds the same **Frame Specification** action
+to Simulated, Firm Planned and Released Production Order. The action passes
+only the selected existing production order as the report filter to report
+50158. It does not create, change or release a production order, and it does
+not write to IWX data or Business Rules.

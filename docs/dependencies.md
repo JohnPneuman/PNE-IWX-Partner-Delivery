@@ -79,6 +79,7 @@ fields or events and never copy proprietary IWX source into this repository.
 | Production BOM Version | Active certified version data through version management |
 | Item | Type and Unit Cost for Non-Inventory components |
 | Codeunit VersionManagement | `GetBOMVersion` at `WorkDate()` |
+| Simulated, Firm Planned and Released Production Order pages | Host the Frame Specification action for the selected production order |
 
 The current implementation uses
 `Production BOM Line.GetQtyPerUnitOfMeasure()` for Item UOM conversion. It does

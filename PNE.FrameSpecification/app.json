@@ -2,7 +2,7 @@
     "id": "f84b335b-771e-429f-a30b-4161c3f670a1",
     "name": "PNE Frame Specification",
     "publisher": "Pneuman",
-    "version": "1.0.0.5",
+    "version": "1.0.0.6",
     "brief": "Builds production frame specifications from Product Configurator configurations.",
     "description": "Uses configurable frame rules, including AccountView ART_BM dimension corrections, to calculate production frame specification lines from an Insight Works Product Configurator tree.",
     "privacyStatement": "",

@@ -5,9 +5,10 @@ Run these scenarios only in a Business Central Sandbox.
 - **Rule maintenance:** create, edit, disable, and delete a `PNE Frame Spec.
   Rule`; verify Item and Production BOM component selection and description,
   quantity, and correction validation.
-- **BMP source:** run Frame Specification from a Released Production Order
-  whose source sales order has one BMP configuration with `I_FRM`; verify the
-  correct configuration ID and configured item are printed.
+- **BMP source:** run Frame Specification from Simulated, Firm Planned and
+  Released Production Order whose source sales order has one BMP configuration
+  with `I_FRM`; verify the correct configuration ID and configured item are
+  printed in each status.
 - **Fallback source:** verify lookup from source item and from a production
   order line when no open source sales line is available.
 - **Frame branch:** verify only options under the selected `I_FRM` child

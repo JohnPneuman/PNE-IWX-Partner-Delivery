@@ -8,7 +8,11 @@ Tables 50151 and 50152 are new extension tables. They contain only new rule mast
 
 ## Production document
 
-The `Frame Specification` action on the Released Production Order opens report 50158. The report finds the top-level BMP configuration from the configured source item (`OBJAV...`) on the production order or its lines. It then builds the calculated frame lines, sorted by description.
+The `Frame Specification` action on Simulated, Firm Planned and Released
+Production Order opens the same report 50158 for the selected order. The report
+finds the top-level BMP configuration from the configured source item
+(`OBJAV...`) on the production order or its lines. It then builds the
+calculated frame lines, sorted by description.
 
 Header values come from the BMP options (`I_OBJ`, `I_FRM`, `I_FRT`, `I_FRMC`, `I_WDTH`, `I_HGHT`, and `I_DPTH`). When an open sales line still exists for the configuration, the report also reads the customer, project and responsible user from that sales document. The configured item number remains the object fallback, so the report can still be printed when no sales line is found.
 

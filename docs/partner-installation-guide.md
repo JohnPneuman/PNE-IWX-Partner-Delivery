@@ -36,6 +36,16 @@ public symbols and event signatures described in
 [dependencies.md](dependencies.md), then compile and complete Sandbox
 regression tests.
 
+## PNE Frame Specification 1.0.0.6
+
+This companion app keeps its existing App ID
+`f84b335b-771e-429f-a30b-4161c3f670a1` and requires Insight Works Product
+Configurator 4.1.9649.1. Version 1.0.0.6 adds the existing report action to
+**Simulated**, **Firm Planned** and **Released Production Order**; it makes no
+database-schema or IWX Business Rule change. Assign the existing **PNE Frame
+Spec.** permission set to users who may run report 50158, then complete
+`frame-specification-test-plan.md` in Sandbox.
+
 ## Installation order and safety
 
 1. Use a Business Central Sandbox that represents the intended master

@@ -31,7 +31,9 @@ the table and field IDs and types. Never use ForceSync.
 ## Report template
 
 Report 50158 `PNE Frame Specification` is opened by the `Frame Specification`
-action on Released Production Order. Its default layout is the Word file
+action on Simulated, Firm Planned and Released Production Order. Each action
+opens the same report for exactly the selected production order. Its default
+layout is the Word file
 `apps/PNE.FrameSpecification/Layouts/PNEFrameSpecification.docx`, registered
 as `FrameSpecificationWord`. Business Central report-layout selection can
 replace or customize the `.docx` without changing calculation code.
