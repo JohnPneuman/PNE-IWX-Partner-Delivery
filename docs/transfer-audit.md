@@ -1,13 +1,13 @@
 # Transfer audit — IWX Business Rules and extension safety
 
-Audit date: 2026-08-19
-Scope: `PNE.ProductConfiguratorEnhancements` and `PNE.FrameSpecification`
+Audit date: 2026-08-23
+Scope: all three delivered apps
 
 ## Result
 
 The static source audit found no code that creates, changes, deletes,
 suppresses, or reimplements Insight Works Product Configurator Business Rules.
-The documented IWX compatibility boundary is followed by both apps.
+The documented IWX compatibility boundary is followed by all three apps.
 
 This is a source and symbol audit, not a replacement for Blu Ace's Sandbox
 acceptance. The required regression scenarios remain in `test-plan.md` and
@@ -24,6 +24,8 @@ acceptance. The required regression scenarios remain in `test-plan.md` and
   Central Config. Template field-validation event.
 - Frame Specification has no event subscribers. It reads Configurator BOM data
   into temporary calculation buffers and does not write IWX configuration data.
+- Production Order Reconciliation has no IWX or Bluace dependency and does not
+  read or write Product Configurator data.
 
 ## IWX data writes and `IsHandled` review
 
@@ -49,14 +51,12 @@ acceptance. The required regression scenarios remain in `test-plan.md` and
 
 ## Build and acceptance status
 
-- Both apps completed the standard repository validation against exact local
+- All three apps completed the standard repository validation against exact local
   Business Central 28.3 and dependency symbols using AL compiler
   17.0.34.45391.
 - CodeCop, UICop, and PerTenantExtensionCop ran with warnings as errors and
-  reported 0 errors, 0 warnings, and 0 informational diagnostics for both apps.
-- Frame Specification 1.0.0.6 exposes the existing report only on Simulated,
-  Firm Planned and Released Production Order; it introduces no IWX subscriber,
-  IWX write or Business Rule interaction.
+  reported 0 errors, 0 warnings, and 0 informational diagnostics for all three
+  apps.
 - Every object now has its approved Pneuman namespace. The public-symbol and
   Sandbox-upgrade risks are documented in `namespace-compatibility-audit.md`.
 - A previous handover note reported the `{I_FA}` Item Disc. Group conversion
@@ -64,5 +64,5 @@ acceptance. The required regression scenarios remain in `test-plan.md` and
   record, environment reference, executor, or result artifact. Treat this
   scenario as unverified until it is rerun and evidence is retained.
 - Before a release decision, Blu Ace must execute and retain all applicable
-  scenarios in the two test plans, including existing IWX Business Rules
-  regression behavior.
+  scenarios in the three test plans, including existing IWX Business Rules,
+  frame-report and production-reconciliation regression behavior.

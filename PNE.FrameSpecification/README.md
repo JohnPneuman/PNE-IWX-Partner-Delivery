@@ -10,13 +10,19 @@ Tables 50151 and 50152 are new extension tables. They contain only new rule mast
 
 The `Frame Specification` action on Simulated, Firm Planned and Released
 Production Order opens the same report 50158 for the selected order. The report
-finds the top-level BMP configuration from the configured source item
-(`OBJAV...`) on the production order or its lines. It then builds the
-calculated frame lines, sorted by description.
+matches the source Sales Quote/Order to the actual top production-order Item first
+and then falls back to the configured source Item (`OBJAV...`) or production-
+order lines. Different matching configuration IDs stop with a clear ambiguity
+error instead of selecting the first Sales Line. It then builds the calculated
+frame lines, sorted by description. Traversal is limited to 50 levels and
+20,000 snapshot rows to protect the user session from corrupt trees.
 
 Header values come from the BMP options (`I_OBJ`, `I_FRM`, `I_FRT`, `I_FRMC`, `I_WDTH`, `I_HGHT`, and `I_DPTH`). When an open sales line still exists for the configuration, the report also reads the customer, project and responsible user from that sales document. The configured item number remains the object fallback, so the report can still be printed when no sales line is found.
 
 The Word layout is stored in `Layouts/PNEFrameSpecification.docx` and can be replaced or customized through Business Central report layouts without changing the calculation code.
+
+Assign `PNE Frame Spec. View` to normal production users. Only rule maintainers
+receive the additional `PNE Frame Spec.` setup role.
 
 ## Insight Works Business Rules compatibility
 

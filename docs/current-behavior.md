@@ -174,10 +174,156 @@ Rules. It validates the active template `FieldRef` without retrieving the
 not-yet-inserted Item. No `Commit()` is used, so an invalid Choice Code fails
 and rolls back the surrounding Item-creation transaction.
 
-## Frame Specification production-order action
+## Optional configured-Item routing operations
 
-PNE Frame Specification 1.0.0.6 adds the same **Frame Specification** action
-to Simulated, Firm Planned and Released Production Order. The action passes
-only the selected existing production order as the report filter to report
-50158. It does not create, change or release a production order, and it does
-not write to IWX data or Business Rules.
+After IWX creates or genuinely reconfigures an Item, the app compares the
+Item Category Choices Routing with the Item's base routing. A missing optional
+operation is copied with zero Setup Time and zero Run Time so a Production BOM
+Routing Link such as `COD` can always resolve. Existing operations, selected
+times and routing versions are not overwritten. If either the target Item
+routing or the Item Category Choices Routing contains a version, automatic
+repair stops before writing because changing only the base routing would not
+prove which version is effective.
+
+Normal Business Central production-order refresh does not perform this repair
+and never changes shared Item-routing master data. For one older configured
+Item, a routing-authorized user can run **Optionele routing herstellen** on the
+Item Card. The action reads the Item's single IWX configuration and category
+choices, previews the result and inserts only the missing zero-time operations.
+An ambiguous configuration, missing base routing, target/Choices routing version or operation
+number conflict blocks without a partial repair. Refreshing an existing
+production order afterward remains a separate planner decision and is safe
+only before consumption, picks or output.
+
+## Production Order Reconciliation
+
+Op Simulated, Firm Planned en Released Production Order staat onder
+**Functions** ook **BOM-stamstructuur**. Dit opent een alleen-lezen boom
+met het hoofdartikel, de bestaande onderliggende Production BOM's als koppen en
+hun ingesprongen artikelen. Bovenaan staat ook **Hoofd-BOM / versie** van de
+eerste productieorderregel; bij meerdere hoofd-BOM's maakt de tekst dat
+duidelijk en staan alle takken in de boom. De root komt uit de op de **Prod.
+Order Line** vastgelegde Production BOM en gebruikt de vastgelegde versie waar
+die gevuld is; anders gebruiken root en onderliggende BOM's alleen een
+gecertificeerde, datumgeldige versie op achtereenvolgens startdatum, uiterste
+datum of werkdatum. Een artikel met een eigen Production BOM krijgt eveneens
+een duidelijke kind-BOM-kop met de gebruikte versie. Een Routing Link Code
+wordt uitsluitend getoond wanneer die op de bestaande BOM-regel staat.
+
+De boom gebruikt tijdelijke standaard **Production BOM Line**-records. Er
+ontstaat geen nieuwe PNE-tabel, PIL-dossier of auditrecord en er wijzigt geen
+Productieorder, Item, Production BOM, IWX-record of Business Rule. Een cirkel,
+diepte van meer dan 50 niveaus of meer dan 20.000 weer te geven regels wordt
+als melding getoond en niet verder uitgeklapt. Naast de PIL-rollen kan de
+alleen-lezen rol **PNE productiestructuur bekijken** (permission set 50198,
+object `PNE PO Struct View`) uitsluitend deze pagina en de benodigde
+standaard brondata openen.
+
+On Simulated, Firm Planned and Released production orders, **Import AutoCAD
+PIL** accepts the actual headerless four-field AutoCAD format:
+
+```text
+'Artikelnummer','Tek. KompNr','KlemNr','Art. Aantal'
+```
+
+A blank `Art. Aantal` means one. Every source row is retained and item totals
+are aggregated for review. The only maintained mapping is a PIL group to an
+existing Non-Inventory CALC placeholder, plus its eligible Inventory-items.
+There are no profiles, productiedoelen, positions or fixed-assembly recipes.
+
+Prepare first traverses the live linked production-order structure. Every
+puntartikel (`.PN...`, `.EA...`, `.PH...`, `.TO...`, enzovoort) is eligible as
+a carrier. A `G.`-item is eligible only when it is an Inventory-item with
+replenishment system Prod. Order and a certified Production BOM; pure G.
+uren-/materiaalgroepen and Purchase/Non-Inventory helper items are excluded.
+When both occur in one linked branch, the puntcarrier remains leading. When
+the live chain does not yield a structural driver for an eligible carrier, the
+app reads, but never changes, the Production BOM as a fallback; an unlinked
+carrier component can be recognized this way as well. On a root production-
+order line it uses the stored Production BOM Version Code where present; other
+fallback levels require a certified, date-valid version. Routing links, scrap,
+Calculation Formula and UOM conversion or mismatch block this fallback. It
+selects the highest imported item that has a lower structural level as the
+structural driver; `7.*` has no special meaning. Imported descendants of that
+driver are covered for audit and are not applied a second time. Within the same
+carrier that structural driver is leading even where a configured CALC component
+exists; only loose grouped items without such a driver take the direct CALC
+route. Because the file has no parent context and aggregated item totals cannot
+be split safely, Prepare blocks an item that is both structurally represented
+and independently available through a loose CALC carrier; it never silently
+consumes the loose quantity as structural coverage.
+
+When one article number occurs both as a physical Item line and as a nested
+Production BOM heading, the Item line is the single quantity-bearing PIL
+driver. The identically numbered BOM heading remains available for lower
+structure and hours but is never counted as a second physical item. A legacy
+BOM with only the nested heading remains recognizable through the controlled
+master-BOM fallback. An existing linked point-carrier line uses its stored BOM
+and version for that check, so a repeated already-applied PIL can resolve as a
+no-change audit instead of becoming an open item again.
+
+The target audit states whether each carrier was found through the live
+production-order snapshot or the read-only current master-BOM fallback. That
+provenance explains the analysis but never authorizes a master-BOM change.
+Drivers that reach the same carrier are treated as minimum requirements rather
+than separate orders. The highest rounded-up whole-carrier requirement wins;
+the requirements are never summed. Only a genuinely shared imported quantity
+across different independent carriers remains a manual allocation decision.
+
+Prepare also creates one read-only proposal line per carrier, with the old and
+proposed quantity, the delta, PIL details and a current production cost
+indication. **Print Change Proposal** only reports this information. A user may
+hand positive deltas to a selected existing Sales Quote only when it is Open,
+not accepted and not expired. The app appends new Item lines; it never edits
+existing quote or configurator lines. Standard Business Central Sales Line
+validation supplies the quote price, not IWX formulas. Negative/zero deltas
+remain manual commercial review. The user needs separate normal Business
+Central Sales Quote/Sales Line read-and-create rights; **PNE PIL Reconcile**
+intentionally grants no Sales Header, Sales Line or sales-page rights. When a
+user changes **Naar deze carrier** on a *Gereed om toe te passen* dossier before handoff,
+the status immediately becomes *Verdeling nodig*: **Stap 2 - Controleer verdeling**
+must rebuild the proposal before handoff or Apply can continue. After quote
+linking, the technical proposal cannot be re-prepared or reallocated; the
+report live-checks whether linked quote lines still exist and still match their
+item, variant, UOM and quantity. If the user has lost Sales Line read access,
+the technical report remains usable and states that the quote link cannot be
+verified with the current permissions; that is commercial review, not a report
+failure or automatic repair.
+
+The target list allocates a PIL item automatically when exactly one carrier is
+valid; more than one carrier requires an exact manual split. Apply is available
+only after the allocation check reports Gereed om toe te passen. It validates and raises
+the structural or CALC carrier with standard Business Central triggers, then
+replaces an exact live CALC source with the allocated actual Inventory-item
+components. It blocks stale, consumed, reserved, picked, finished, ambiguous
+and inexact structures. No `Commit()` is used, so a failure rolls the complete
+Apply back.
+
+Routing-hour comparison is separate from the component destination. Where the
+order has one unambiguous routed end-item line, the app snapshots all eligible
+Non-Inventory components with a Routing Link Code across every live production
+order line before and after Apply. Each component contributes `Quantity per ×
+owning production-line quantity ÷ routed end-item quantity`, the live equivalent
+of BOM Buffer **Qty. per Top Item**. Only that proven difference is added to or
+subtracted from the existing active end-item operation. Hidden hours that were
+already represented in the routing but are not expanded as live components are
+therefore retained. Nested work-area routes are not chosen merely because
+material was added there, and an optional live routing operation with Run Time
+zero remains zero. Standard Business Central then reschedules the affected live
+routing lines; no IWX or Bluace master routing is invoked or modified.
+
+The same calculation is available without a PIL dossier through **Routinguren
+opnieuw berekenen** on Simulated, Firm Planned and Released Production Orders.
+It is intended for manual production-component changes and requires an explicit
+confirmation before active linked route times are replaced.
+It blocks when a component with an hour-bearing Production BOM is not expanded,
+unless its active certified Production BOM can be read safely. Such a component
+is expanded read-only in memory and contributes its nested Routing Link hours at
+the actual component quantity per routed top item. No production-order line or
+master BOM is created or modified. Scrap and Fixed Quantity in this fallback
+remain blocked rather than guessed.
+
+Production BOM Header/Line master data, the original configured Item and all
+IWX data remain unchanged. A Toegepast audit dossier is not prepared or applied
+again. See `production-order-reconciliation.md` for the complete rules and
+`production-order-reconciliation-test-plan.md` for the required Sandbox tests.

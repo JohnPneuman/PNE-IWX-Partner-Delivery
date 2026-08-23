@@ -275,6 +275,37 @@ codeunit 50101 "PNE IWX Event Subscribers"
         IWXItemTemplateMgt.ClearConfiguredItemCreation();
     end;
 
+    [EventSubscriber(
+        ObjectType::Codeunit,
+        Codeunit::"IWX Configurator Mgmt.",
+        OnAfterConfiguredItemCreated,
+        '',
+        false,
+        false)]
+    local procedure CompleteOptionalRoutingAfterConfiguredItemCreated(
+        var precItem: Record Item;
+        var Config: Record "IWX Configurator BOM v3")
+    var
+        IWXRoutingCompleteMgt: Codeunit "PNE IWX Routing Complete Mgt.";
+    begin
+        IWXRoutingCompleteMgt.EnsureOptionalRoutingLines(precItem, Config);
+    end;
+
+    [EventSubscriber(
+        ObjectType::Codeunit,
+        Codeunit::"IWX Configurator Mgmt.",
+        OnAfterExistingItemConfigured,
+        '',
+        false,
+        false)]
+    local procedure CompleteOptionalRoutingAfterExistingItemConfigured(
+        var precItem: Record Item;
+        var Config: Record "IWX Configurator BOM v3")
+    var
+        IWXRoutingCompleteMgt: Codeunit "PNE IWX Routing Complete Mgt.";
+    begin
+        IWXRoutingCompleteMgt.EnsureOptionalRoutingLines(precItem, Config);
+    end;
 
     var
         IsPreparingConfiguredSalesExtendedText: Boolean;

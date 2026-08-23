@@ -10,6 +10,7 @@ pageextension 50163 "PNE Simulated Prod. Order" extends "Simulated Production Or
         {
             action(PNEFrameSpecification)
             {
+                AccessByPermission = codeunit "PNE Frame Spec. Action Mgt." = X;
                 ApplicationArea = All;
                 Caption = 'Frame Specification';
                 Image = PrintReport;

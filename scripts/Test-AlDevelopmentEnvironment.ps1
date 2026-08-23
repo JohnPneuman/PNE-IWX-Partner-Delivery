@@ -171,11 +171,12 @@ $projects = @(Get-AlProjects -Root $resolvedRoot)
 $approvedNamespaces = @{
     'PNE.FrameSpecification' = 'Pneuman.FrameSpecification'
     'PNE.ProductConfiguratorEnhancements' = 'Pneuman.ProductConfigurator'
+    'PNE.ProductionOrderReconciliation' = 'Pneuman.ProductionOrderReconciliation'
 }
 $expectedProjectNames = @($approvedNamespaces.Keys | Sort-Object)
 $actualProjectNames = @($projects.Name | Sort-Object)
-if (($projects.Count -eq 2) -and (($actualProjectNames -join '|') -ceq ($expectedProjectNames -join '|'))) {
-    Write-CheckResult PASS 'Found the two expected AL projects.'
+if (($projects.Count -eq $expectedProjectNames.Count) -and (($actualProjectNames -join '|') -ceq ($expectedProjectNames -join '|'))) {
+    Write-CheckResult PASS "Found the $($expectedProjectNames.Count) expected AL projects."
 }
 else {
     Write-CheckResult FAIL "Expected AL projects $($expectedProjectNames -join ', '); found $($actualProjectNames -join ', ')."

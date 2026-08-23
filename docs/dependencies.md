@@ -79,7 +79,6 @@ fields or events and never copy proprietary IWX source into this repository.
 | Production BOM Version | Active certified version data through version management |
 | Item | Type and Unit Cost for Non-Inventory components |
 | Codeunit VersionManagement | `GetBOMVersion` at `WorkDate()` |
-| Simulated, Firm Planned and Released Production Order pages | Host the Frame Specification action for the selected production order |
 
 The current implementation uses
 `Production BOM Line.GetQtyPerUnitOfMeasure()` for Item UOM conversion. It does
@@ -106,3 +105,37 @@ internal and manage Item validation; this app reads only the public table and
 field symbols. After a Blue Ace upgrade, verify the app identity, Item field,
 group table key, Profit % field, and standard `Price=Cost+Profit` semantics
 before compiling or publishing.
+
+## PNE Production Order Reconciliation
+
+This third app has no Insight Works or Blue Ace dependency. It compiles only
+against Microsoft Business Central application 28.x symbols.
+
+| Microsoft symbol | Use | Compatibility concern |
+|---|---|---|
+| Production Order | Identifies Simulated, Firm Planned and Released orders for PIL and the configuration view | Status and primary key semantics |
+| Prod. Order Line | Finds and validates a point-carrier or eligible produceerbare `G.`-carrier production order line; supplies the stored root BOM/version to the configuration view | Quantity validation, stored BOM/version and linked-line semantics |
+| Prod. Order Component | Finds/scales a point-carrier or eligible produceerbare `G.`-carrier component, locates a live CALC source, and creates actual components | Field validation, warehouse/reservation and quantity formula behavior |
+| Prod. Order Routing Line, Capacity Unit of Measure and Calculate Prod. Order | Selects one unambiguous routed end-item owner, writes the complete order-wide Routing Link hour total and reschedules affected live order lines | Source/end-item identity, Routing Reference/No. filters, Run Time and Lot Size semantics, capacity-UOM conversion and `CalculateRoutingFromActual` behavior; zero-time optional operations must remain disabled |
+| Reservation Entry | Follows existing linked production-order demand and detects reservations | Source filter, paired entry and ordertracking semantics |
+| Production BOM Header/Line/Version and VersionManagement | Read-only structural fallback and temporary configuration tree: stored root Production BOM Version Code where present, otherwise certified/date-valid child selection | Certification, start/due/work-date filtering, existing routing-link display and recursive/cycle/display-limit semantics; conversion/mismatch must block the PIL fallback rather than be estimated |
+| Item | Constrains group setup, resolves imported descriptions and recalculates the CALC Unit Cost; resolves a child BOM beneath an Item in the temporary configuration tree; after a separate user confirmation repairs only a same-number point Item's missing/incorrect Production BOM No. through standard validation | Inventory/Non-Inventory type, Production BOM No. and Unit Cost validation; existing Item subscribers must run and no general direct Item-modify permission is granted |
+| Sales Header and Sales Line | Validates a selected existing eligible Sales Quote and appends grouped original-to-final net morework or lesswork as new Item lines | Open/Quote Accepted/valid-until state, standard Sales Line price calculation, positive/negative quantity validation, line numbering, currency, item/variant/UOM validation and shared quote-link integrity; the user needs normal separate read/create rights |
+| Sales Quotes and Sales Quote pages | Presents the user-selected existing Sales Quote and opens it after successful handoff | Public lookup/page-action anchors; the application code creates no quote and never edits an existing quote line; PNE PIL Reconcile deliberately grants no sales-table or sales-page rights |
+| Simulated/Firm Planned/Released Production Order pages | Host Import, PIL-history and read-only BOM-stamstructuur actions | Public page/action anchors and standard page access |
+| InStream and UploadIntoStream | Read the headerless, single-quoted four-field AutoCAD file | Encoding, line read and quote/decimal semantics |
+
+After a Microsoft application upgrade, inspect these exact public symbols and
+rerun the headerless-import, structural-driver, CALC-replacement, Production
+BOM fallback and warehouse safeguard scenarios. Confirm specifically that a
+highest structural driver wins only in its own carrier, while loose items in a
+different direct-CALC carrier remain replaceable. `7.*` is not a dependency or
+a hardcoded application rule. Also rerun the Sales Quote grouped positive,
+negative and net-zero scenarios, expired/accepted quote, shared quote-line
+integrity, reversal and standard-price scenarios. Do
+not add IWX symbols merely because other apps in the monorepo use them. Also
+rerun the configuration-tree scenario with the stored root BOM/version, a
+date-effective certified child version and circular/deep nested BOMs. The
+separate **PNE PO Struct View** role must stay limited to the
+read-only page/codeunit and standard source data; it must not add a PIL, IWX or
+production-order write permission.

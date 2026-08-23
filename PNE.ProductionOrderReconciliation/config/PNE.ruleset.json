@@ -1,0 +1,36 @@
+{
+    "name": "PNE AL Quality Baseline",
+    "description": "Preserves Microsoft analyzer defaults and promotes verified naming and declaration rules for immediate editor feedback.",
+    "rules": [
+        {
+            "id": "AA0021",
+            "action": "Error",
+            "justification": "Enforces deterministic variable declaration ordering by AL object type. This is type ordering, not alphabetical name ordering."
+        },
+        {
+            "id": "AA0072",
+            "action": "Error",
+            "justification": "Enforces Microsoft's type or object-name suffix convention for variables and parameters."
+        },
+        {
+            "id": "AA0073",
+            "action": "Error",
+            "justification": "Requires temporary variables to use the Microsoft Temp prefix convention."
+        },
+        {
+            "id": "AA0074",
+            "action": "Error",
+            "justification": "Requires approved Microsoft suffixes for Label and TextConst variable names."
+        },
+        {
+            "id": "AA0215",
+            "action": "Error",
+            "justification": "Enforces Microsoft's AL naming style, including object and source-file naming."
+        },
+        {
+            "id": "AA0247",
+            "action": "Error",
+            "justification": "Requires every AL object to declare a namespace. The setup check separately verifies the approved app-specific namespace value."
+        }
+    ]
+}

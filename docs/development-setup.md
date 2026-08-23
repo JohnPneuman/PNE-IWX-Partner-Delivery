@@ -2,13 +2,14 @@
 
 ## Supported project layout
 
-This repository contains two independent AL projects:
+This repository contains three independent AL projects:
 
 - `PNE.ProductConfiguratorEnhancements`;
-- `PNE.FrameSpecification`.
+- `PNE.FrameSpecification`; and
+- `PNE.ProductionOrderReconciliation`.
 
 Always open `PNE-IWX-Extensions.code-workspace`. It is a multi-root workspace
-that loads both folders containing an `app.json`. Opening only the repository
+that loads all folders containing an `app.json`. Opening only the repository
 root or one app can hide diagnostics from the other app.
 
 ## One-time workstation setup
@@ -27,7 +28,7 @@ Central, or store credentials.
 
 ## Analyzer configuration
 
-Both app folders own their settings and ruleset. They enable full-project
+Every app folder owns its settings and ruleset. They enable full-project
 background analysis with:
 
 - CodeCop for the official AL coding guidelines and general code quality;
@@ -67,6 +68,9 @@ Configurator and Blue Ace Pneuman symbols. Frame Specification requires the
 exact Insight Works symbols. After a dependency upgrade, inspect the actual
 public symbols and event signatures before changing or compiling integration
 code.
+
+Production Order Reconciliation has no IWX or Blue Ace dependency and requires
+only compatible Microsoft Business Central application symbols.
 
 ## Format and validate
 

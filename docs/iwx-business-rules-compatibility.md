@@ -33,6 +33,17 @@ resolved value, but never changes the IWX or Config. Template records. Its
 `IsHandled` assignment is limited to that standard template-field validation
 event; it does not handle a Business Rule event.
 
+The optional-routing completion subscribes only to public IWX events after an
+Item has been newly configured or genuinely reconfigured. It reads the
+category Choices Routing and adds only missing standard Routing Lines to the
+configured Item base routing with zero time. Existing operations and times are
+not changed. Normal production-order calculation or refresh does not invoke
+this shared-master-data repair. An authorized Item user can run the explicit
+**Optionele routing herstellen** action for one older Item; that action reads
+its single stored IWX configuration read-only. No IWX record, Business Rule,
+temporary Configurator BOM or `IsHandled` value is written by this feature,
+and no Business Rule evaluation is initiated or bypassed.
+
 ## PNE Frame Specification
 
 The app has no event subscribers. It reads `IWX Configurator BOM v3` records
@@ -45,6 +56,29 @@ the frame-specification report. These are report-calculation rules, not Insight
 Works Business Rules. Table 50152 `PNE Frame Spec. Line` is used as the type
 for temporary calculated report and preview lines; the current report flow does
 not persist those lines.
+
+## PNE Production Order Reconciliation
+
+This app has no Insight Works dependency. It does not read or write an IWX
+table, subscribe to an IWX event, set an IWX `IsHandled`, invoke the IWX Rule
+Engine, or create/modify/delete an IWX Business Rule. It has no IWX event
+subscriber and does not need an IWX adapter boundary; it only uses standard
+production-order, Production BOM, Item and Sales Quote APIs for the PIL
+workflow. Its positive-change quote lines obtain their price through standard
+Business Central Sales Line validation, never through an IWX formula or Rule
+Engine call.
+
+The separate **BOM-stamstructuur** view follows the same boundary. It
+reads only the existing standard Production Order, Prod. Order Line, Item and
+Production BOM records, creates temporary Production BOM Line rows for its
+page session, and uses no IWX symbol or record. Permission set 50198 **PNE
+productiestructuur bekijken** (`PNE PO Struct View`) grants no IWX, PIL or
+production-order write permission.
+
+Sandbox acceptance must still run representative existing IWX Business Rules
+and Quoting Item conversion before and after installation. The expected result
+is identical IWX data and behavior; the new app should only add its production
+order actions, app-owned audit data, and controlled CALC reconciliation.
 
 ## Upgrade and review checks
 

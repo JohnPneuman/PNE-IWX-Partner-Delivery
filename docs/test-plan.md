@@ -87,6 +87,31 @@ Price when no profit group is selected.
   supported IWX close/reopen and Item-creation lifecycle when selections have
   not changed.
 
+## Optional configured-Item routing scenarios
+
+- **New Item, option off:** the completed Item base routing contains the
+  category operation with its Routing Link Code and zero Setup/Run Time.
+- **New Item, option on:** the selected operation and its calculated time are
+  preserved and are never reset to zero.
+- **Existing complete Item:** explicit repair reports that nothing is missing
+  and writes no routing line.
+- **Older incomplete Item:** a routing-authorized user runs **Optionele routing
+  herstellen** and only the missing zero-time operation is inserted.
+- **Refresh boundary:** normal production-order refresh does not modify the
+  Item base routing. Transfer of a repaired routing to an existing order is a
+  separate planner action on a clean, unconsumed order.
+- **Ambiguity and target version:** multiple IWX configurations, any version on
+  the configured Item's target routing, or an operation-number conflict blocks
+  without a partial change.
+- **Choices-routing version:** add a version to the Item Category Choices
+  Routing while the target has none. New-Item completion and explicit repair
+  must block before changing the target base routing.
+- **Least privilege:** a user without Routing Line insert permission cannot see
+  the explicit repair action; normal configured-Item creation remains usable
+  through the app's indirect permission.
+- **IWX regression:** configuration result and Business Rules are identical
+  before and after the routing-completion feature.
+
 ## Configured Sales Line extended-text scenarios
 
 - **Manual insertion:** Insert Ext. Text adds every selected NLD Item text.
@@ -147,6 +172,8 @@ Price when no profit group is selected.
 - **Include with template value:** an empty IWX buffer remnant from an Include
   choice with Ext. Text Template populated produces no document line.
 - **Circular child configuration:** traversal stops with a clear error.
+- **Traversal limits:** 51 nested child configurations and more than 20,000
+  snapshot rows stop with a clear performance-protection error.
 - **No master-data mutation:** Extended Text Header and Line remain unchanged.
 
 ## Configured Item Template default scenarios
@@ -189,3 +216,50 @@ the preserved IWX component. A direct unit test should verify the custom
 calculation's active-path cycle guard without invoking IWX standard costing.
 Until then, these remain concrete manual cases; an empty non-runnable test
 project provides no protection.
+
+## Production Order Reconciliation scenarios
+
+The full acceptance matrix is maintained in
+`production-order-reconciliation-test-plan.md`. At minimum, release requires:
+
+- real headerless, single-quoted four-field AutoCAD PIL import and raw audit,
+  including both `1,00` and `1.00`;
+- only PIL-group and PIL-group-article setup, including Business Central Item
+  type lookups;
+- all pointartikel prefixes as carrier candidates and eligible produceerbare
+  `G.` carriers, while G. hour/material/helper groups remain excluded;
+- direct CALC route only for loose items without a structural driver in that
+  same carrier: raise the selected carrier before replacing its live CALC source
+  with actual items;
+- generic highest structural driver, including a non-`7.*` fixture and
+  coverage of imported descendants without double counting or aggregate
+  overlap/scaling;
+- read-only Production BOM fallback for an unlinked carrier component, including
+  the stored root BOM-version where present, visible target analysis source,
+  and safe blocking for routing, scrap, formula and UOM conversion/mismatch;
+- automatic allocation for one valid carrier, zero allocation blocking, and
+  exact manual allocation for multiple candidates;
+- a manual **Naar deze carrier** edit after *Gereed om toe te passen* immediately
+  returning the dossier to *Verdeling nodig*, with **Stap 2 - Controleer verdeling**
+  required to rebuild the proposal before commercial handoff or Apply;
+- clear, read-only carrier change proposal and report, including technical
+  cost indication versus commercial sales price;
+- selected existing Sales Quote handoff: append positive deltas only as new
+  Item lines to an Open, unaccepted, non-expired quote; never alter existing
+  quote or configurator lines; use standard Business Central quote pricing,
+  not IWX formulas; normal Sales Quote/Sales Line read-and-create rights are
+  required separately from **PNE PIL Reconcile**;
+- manual commercial review for negative/zero deltas, a locked technical
+  snapshot after quote linking, and live report detection of a changed or
+  deleted quote line; after Sales Line read access is removed, the technical
+  report must remain usable and show permission-based commercial review;
+- no Production BOM master-data mutation;
+- apply rollback on invalid quantity, formula, Item or later target;
+- consumption, reservation and pick blocking;
+- stale-carrier, stale structural driver, finished-output, ambiguity and
+  applied-audit blocking;
+- permission and applied-audit immutability checks;
+- availability of PIL and Frame Specification actions on Simulated, Firm
+  Planned and Released production orders; and
+- unchanged representative IWX Business Rules, Quoting Item conversion and
+  Product Configurator behavior before and after app installation.

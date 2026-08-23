@@ -11,8 +11,14 @@ codeunit 50154 "PNE Frame Spec. Mgt."
     var
         TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
+        ConfigurationNodeCount: Integer;
     begin
-        CopyConfigurationBranch(ConfigurationID, TempIWXConfiguratorBOMv3, ActiveConfigurationIDs);
+        CopyConfigurationBranch(
+            ConfigurationID,
+            TempIWXConfiguratorBOMv3,
+            ActiveConfigurationIDs,
+            1,
+            ConfigurationNodeCount);
         BuildLinesFromConfiguration(TempIWXConfiguratorBOMv3, TempPNEFrameSpecLine);
     end;
 
@@ -41,51 +47,116 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         var ConfiguredItemNo: Code[20]): Boolean
     var
         ProdOrderLine: Record "Prod. Order Line";
+        CandidateConfigurationID: Code[20];
+        CandidateItemNo: Code[20];
+        CandidateLineNo: Integer;
     begin
         Clear(ConfigurationID);
         Clear(ProductionOrderLineNo);
         Clear(ConfiguredItemNo);
 
         if TryFindConfigurationFromSalesOrder(
-             ProductionOrder."Source No.",
+             ProductionOrder,
              ConfigurationID,
+             ProductionOrderLineNo,
              ConfiguredItemNo)
         then
             exit(true);
 
-        if ProductionOrder."Source No." <> '' then
+        if (ProductionOrder."Source Type" = ProductionOrder."Source Type"::Item) and
+           (ProductionOrder."Source No." <> '')
+        then
             if TryFindConfigurationForConfiguredItem(ProductionOrder."Source No.", ConfigurationID) then begin
                 ConfiguredItemNo := ProductionOrder."Source No.";
+                ProductionOrderLineNo := FindProductionOrderLineNo(ProductionOrder, ConfiguredItemNo);
                 exit(true);
             end;
 
         ProdOrderLine.SetRange(Status, ProductionOrder.Status);
         ProdOrderLine.SetRange("Prod. Order No.", ProductionOrder."No.");
+        ProdOrderLine.SetRange("Planning Level Code", 0);
         if ProdOrderLine.FindSet() then
             repeat
-                if TryFindConfigurationForConfiguredItem(ProdOrderLine."Item No.", ConfigurationID) then begin
-                    ProductionOrderLineNo := ProdOrderLine."Line No.";
-                    ConfiguredItemNo := ProdOrderLine."Item No.";
-                    exit(true);
+                if TryFindConfigurationForConfiguredItem(ProdOrderLine."Item No.", CandidateConfigurationID) then
+                    AddUniqueConfigurationCandidate(
+                        ProductionOrder."No.",
+                        CandidateConfigurationID,
+                        ProdOrderLine."Item No.",
+                        ProdOrderLine."Line No.",
+                        ConfigurationID,
+                        ConfiguredItemNo,
+                        ProductionOrderLineNo);
+            until ProdOrderLine.Next() = 0;
+
+        if ConfigurationID <> '' then
+            exit(true);
+
+        ProdOrderLine.SetRange("Planning Level Code");
+        if ProdOrderLine.FindSet() then
+            repeat
+                if TryFindConfigurationForConfiguredItem(ProdOrderLine."Item No.", CandidateConfigurationID) then begin
+                    CandidateItemNo := ProdOrderLine."Item No.";
+                    CandidateLineNo := ProdOrderLine."Line No.";
+                    AddUniqueConfigurationCandidate(
+                        ProductionOrder."No.",
+                        CandidateConfigurationID,
+                        CandidateItemNo,
+                        CandidateLineNo,
+                        ConfigurationID,
+                        ConfiguredItemNo,
+                        ProductionOrderLineNo);
                 end;
             until ProdOrderLine.Next() = 0;
 
-        exit(false);
+        exit(ConfigurationID <> '');
     end;
 
     local procedure TryFindConfigurationFromSalesOrder(
-        SalesOrderNo: Code[20];
+        ProductionOrder: Record "Production Order";
         var ConfigurationID: Code[20];
+        var ProductionOrderLineNo: Integer;
         var ConfiguredItemNo: Code[20]): Boolean
     var
         IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
+        ProdOrderLine: Record "Prod. Order Line";
         SalesLine: Record "Sales Line";
+        SalesHeader: Record "Sales Header";
+        ProductionOrderItemNos: Dictionary of [Code[20], Boolean];
+        CandidateConfigurationID: Code[20];
+        CandidateItemNo: Code[20];
+        CandidateLineNo: Integer;
     begin
-        if SalesOrderNo = '' then
+        if (ProductionOrder."Source Type" <> ProductionOrder."Source Type"::"Sales Header") or
+           (ProductionOrder."Source No." = '')
+        then
             exit(false);
+        if ProductionOrder.Status = ProductionOrder.Status::Simulated then begin
+            if not SalesHeader.Get(SalesHeader."Document Type"::Quote, ProductionOrder."Source No.") then
+                exit(false);
+        end else
+            if not SalesHeader.Get(SalesHeader."Document Type"::Order, ProductionOrder."Source No.") then
+                exit(false);
 
-        SalesLine.SetRange("Document Type", SalesLine."Document Type"::Order);
-        SalesLine.SetRange("Document No.", SalesOrderNo);
+        ProdOrderLine.SetRange(Status, ProductionOrder.Status);
+        ProdOrderLine.SetRange("Prod. Order No.", ProductionOrder."No.");
+        ProdOrderLine.SetRange("Planning Level Code", 0);
+        if ProdOrderLine.FindSet() then
+            repeat
+                if not ProductionOrderItemNos.ContainsKey(ProdOrderLine."Item No.") then
+                    ProductionOrderItemNos.Add(ProdOrderLine."Item No.", true);
+            until ProdOrderLine.Next() = 0;
+        if ProductionOrderItemNos.Count() = 0 then begin
+            ProdOrderLine.SetRange("Planning Level Code");
+            if ProdOrderLine.FindSet() then
+                repeat
+                    if not ProductionOrderItemNos.ContainsKey(ProdOrderLine."Item No.") then
+                        ProductionOrderItemNos.Add(ProdOrderLine."Item No.", true);
+                until ProdOrderLine.Next() = 0;
+        end;
+
+        SalesLine.SetRange("Document Type", SalesHeader."Document Type");
+        SalesLine.SetRange("Document No.", ProductionOrder."Source No.");
+        SalesLine.SetRange(Type, SalesLine.Type::Item);
         SalesLine.SetFilter("IWX Cfg. Configuration ID", '<>%1', '');
         if SalesLine.FindSet() then
             repeat
@@ -93,15 +164,71 @@ codeunit 50154 "PNE Frame Spec. Mgt."
                      SalesLine."IWX Cfg. Configuration ID",
                      IWXConfiguratorBOMv3)
                 then begin
-                    ConfigurationID := SalesLine."IWX Cfg. Configuration ID";
-                    ConfiguredItemNo := IWXConfiguratorBOMv3."Configured Item No.";
-                    if ConfiguredItemNo = '' then
-                        ConfiguredItemNo := SalesLine."No.";
-                    exit(true);
+                    CandidateConfigurationID := SalesLine."IWX Cfg. Configuration ID";
+                    CandidateItemNo := IWXConfiguratorBOMv3."Configured Item No.";
+                    if CandidateItemNo = '' then
+                        CandidateItemNo := SalesLine."No.";
+                    if ProductionOrderItemNos.ContainsKey(CandidateItemNo) or
+                       ProductionOrderItemNos.ContainsKey(SalesLine."No.")
+                    then begin
+                        if not ProductionOrderItemNos.ContainsKey(CandidateItemNo) then
+                            CandidateItemNo := SalesLine."No.";
+                        CandidateLineNo := FindProductionOrderLineNo(ProductionOrder, CandidateItemNo);
+                        AddUniqueConfigurationCandidate(
+                            ProductionOrder."No.",
+                            CandidateConfigurationID,
+                            CandidateItemNo,
+                            CandidateLineNo,
+                            ConfigurationID,
+                            ConfiguredItemNo,
+                            ProductionOrderLineNo);
+                    end;
                 end;
             until SalesLine.Next() = 0;
 
-        exit(false);
+        exit(ConfigurationID <> '');
+    end;
+
+    local procedure AddUniqueConfigurationCandidate(
+        ProductionOrderNo: Code[20];
+        CandidateConfigurationID: Code[20];
+        CandidateItemNo: Code[20];
+        CandidateLineNo: Integer;
+        var ConfigurationID: Code[20];
+        var ConfiguredItemNo: Code[20];
+        var ProductionOrderLineNo: Integer)
+    begin
+        if ConfigurationID = '' then begin
+            ConfigurationID := CandidateConfigurationID;
+            ConfiguredItemNo := CandidateItemNo;
+            ProductionOrderLineNo := CandidateLineNo;
+            exit;
+        end;
+        if ConfigurationID <> CandidateConfigurationID then
+            Error(AmbiguousProductionOrderConfigurationErr, ProductionOrderNo, ConfigurationID, CandidateConfigurationID);
+    end;
+
+    local procedure FindProductionOrderLineNo(ProductionOrder: Record "Production Order"; ItemNo: Code[20]): Integer
+    var
+        ProdOrderLine: Record "Prod. Order Line";
+        FoundLineNo: Integer;
+    begin
+        Clear(FoundLineNo);
+        ProdOrderLine.SetRange(Status, ProductionOrder.Status);
+        ProdOrderLine.SetRange("Prod. Order No.", ProductionOrder."No.");
+        ProdOrderLine.SetRange("Item No.", ItemNo);
+        ProdOrderLine.SetRange("Planning Level Code", 0);
+        if not ProdOrderLine.FindSet() then begin
+            ProdOrderLine.SetRange("Planning Level Code");
+            if not ProdOrderLine.FindSet() then
+                exit(0);
+        end;
+        repeat
+            if FoundLineNo <> 0 then
+                exit(0);
+            FoundLineNo := ProdOrderLine."Line No.";
+        until ProdOrderLine.Next() = 0;
+        exit(FoundLineNo);
     end;
 
     local procedure TryGetFrameConfiguration(
@@ -225,10 +352,14 @@ codeunit 50154 "PNE Frame Spec. Mgt."
     local procedure CopyConfigurationBranch(
         ConfigurationID: Code[20];
         var TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
-        var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean])
+        var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
+        Depth: Integer;
+        var ConfigurationNodeCount: Integer)
     var
         IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
+        if Depth > MaximumConfigurationDepth() then
+            Error(ConfigurationDepthErr, ConfigurationID, MaximumConfigurationDepth());
         if ActiveConfigurationIDs.ContainsKey(ConfigurationID) then
             Error(CircularConfigurationErr, ConfigurationID);
 
@@ -238,6 +369,9 @@ codeunit 50154 "PNE Frame Spec. Mgt."
             Error(ConfigurationNotFoundErr, ConfigurationID);
 
         repeat
+            ConfigurationNodeCount += 1;
+            if ConfigurationNodeCount > MaximumConfigurationNodes() then
+                Error(ConfigurationNodeLimitErr, MaximumConfigurationNodes());
             TempIWXConfiguratorBOMv3.Init();
             TempIWXConfiguratorBOMv3.TransferFields(IWXConfiguratorBOMv3);
             TempIWXConfiguratorBOMv3.Insert();
@@ -245,7 +379,9 @@ codeunit 50154 "PNE Frame Spec. Mgt."
                 CopyConfigurationBranch(
                     IWXConfiguratorBOMv3."Choice Configuration ID",
                     TempIWXConfiguratorBOMv3,
-                    ActiveConfigurationIDs);
+                    ActiveConfigurationIDs,
+                    Depth + 1,
+                    ConfigurationNodeCount);
         until IWXConfiguratorBOMv3.Next() = 0;
         ActiveConfigurationIDs.Remove(ConfigurationID);
     end;
@@ -256,17 +392,34 @@ codeunit 50154 "PNE Frame Spec. Mgt."
     var
         IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
     begin
+        Clear(ConfigurationID);
         if ConfiguredItemNo = '' then
             exit(false);
 
         IWXConfiguratorBOMv3.SetCurrentKey("Configured Item No.");
         IWXConfiguratorBOMv3.SetRange("Configured Item No.", ConfiguredItemNo);
         IWXConfiguratorBOMv3.SetRange("Configuration Option", FrameOptionCodeLbl);
-        if not IWXConfiguratorBOMv3.FindFirst() then
+        if not IWXConfiguratorBOMv3.FindSet() then
             exit(false);
 
-        ConfigurationID := IWXConfiguratorBOMv3."Configuration ID";
+        repeat
+            if ConfigurationID = '' then
+                ConfigurationID := IWXConfiguratorBOMv3."Configuration ID"
+            else
+                if ConfigurationID <> IWXConfiguratorBOMv3."Configuration ID" then
+                    Error(AmbiguousConfiguredItemErr, ConfiguredItemNo, ConfigurationID, IWXConfiguratorBOMv3."Configuration ID");
+        until IWXConfiguratorBOMv3.Next() = 0;
         exit(ConfigurationID <> '');
+    end;
+
+    local procedure MaximumConfigurationDepth(): Integer
+    begin
+        exit(50);
+    end;
+
+    local procedure MaximumConfigurationNodes(): Integer
+    begin
+        exit(20000);
     end;
 
     local procedure GetConfigurationOption(
@@ -379,6 +532,10 @@ codeunit 50154 "PNE Frame Spec. Mgt."
         NoteOptionCodeLbl: Label 'I_NOTE', Locked = true;
         NoteOptionCode2Lbl: Label 'I_NOTITIE', Locked = true;
         CircularConfigurationErr: Label 'Configuration %1 contains a circular sub-configuration reference.', Comment = '%1 = configuration ID';
+        AmbiguousConfiguredItemErr: Label 'Configured item %1 is linked to multiple frame configurations (%2 and %3). The frame specification cannot choose safely.', Comment = '%1 = item no.; %2/%3 = configuration IDs';
+        AmbiguousProductionOrderConfigurationErr: Label 'Production order %1 contains multiple different frame configurations (%2 and %3). Open the correct production-order line or repair the configuration link.', Comment = '%1 = production order no.; %2/%3 = configuration IDs';
+        ConfigurationDepthErr: Label 'Configuration %1 is nested more than %2 levels. The frame specification stops to prevent an endless or corrupt configuration tree.', Comment = '%1 = configuration ID; %2 = maximum depth';
+        ConfigurationNodeLimitErr: Label 'The frame configuration contains more than %1 rows. The frame specification stops to protect performance. Split or repair the configuration tree.', Comment = '%1 = maximum node count';
         ConfigurationNotFoundErr: Label 'Configuration %1 was not found in the Configurator BOM.', Comment = '%1 = configuration ID';
         FrameConfigurationNotFoundErr: Label 'No %1 option was found in this configuration or its sub-configurations.', Comment = '%1 = frame option code';
         NoMatchingRulesErr: Label 'No enabled frame specification rules match frame %1 and its selected configuration options.', Comment = '%1 = frame configuration code';

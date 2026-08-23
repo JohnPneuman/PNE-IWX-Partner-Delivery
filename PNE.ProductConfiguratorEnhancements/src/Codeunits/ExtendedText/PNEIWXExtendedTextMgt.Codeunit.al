@@ -12,6 +12,7 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
         HasIncludedItemText: Boolean;
+        ConfigurationNodeCount: Integer;
         NextLineNo: Integer;
     begin
         if not TryLoadSalesLineConfiguration(
@@ -23,20 +24,25 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         InspectConfigurationTextTypes(
             TempIWXConfiguratorBOMv3,
             ActiveConfigurationIDs,
-            HasIncludedItemText);
+            HasIncludedItemText,
+            1,
+            ConfigurationNodeCount);
         if not HasIncludedItemText then
             exit;
 
         TempExtendedTextLine.Reset();
         TempExtendedTextLine.DeleteAll();
         Clear(ActiveConfigurationIDs);
+        Clear(ConfigurationNodeCount);
 
         BuildGroupedConfigurationText(
             TempIWXConfiguratorBOMv3,
             1,
             TempExtendedTextLine,
             ActiveConfigurationIDs,
-            NextLineNo);
+            NextLineNo,
+            1,
+            ConfigurationNodeCount);
     end;
 
     procedure HasConfiguredSalesExtendedText(SalesLine: Record "Sales Line"): Boolean
@@ -44,6 +50,7 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         TempIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
         ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
         HasIncludedItemText: Boolean;
+        ConfigurationNodeCount: Integer;
     begin
         if not TryLoadSalesLineConfiguration(
             TempIWXConfiguratorBOMv3,
@@ -54,7 +61,9 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         InspectConfigurationTextTypes(
             TempIWXConfiguratorBOMv3,
             ActiveConfigurationIDs,
-            HasIncludedItemText);
+            HasIncludedItemText,
+            1,
+            ConfigurationNodeCount);
         exit(HasIncludedItemText);
     end;
 
@@ -124,7 +133,9 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         ParentQuantity: Decimal;
         var TempExtendedTextLine: Record "Extended Text Line" temporary;
         var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
-        var NextLineNo: Integer)
+        var NextLineNo: Integer;
+        Depth: Integer;
+        var ConfigurationNodeCount: Integer)
     var
         ChildIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         TempDisplayOrderedIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3" temporary;
@@ -134,9 +145,14 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         GroupStartLineNo: Integer;
         LineQuantity: Decimal;
     begin
+        if Depth > MaximumConfigurationDepth() then
+            Error(ConfigurationDepthErr, MaximumConfigurationDepth());
         CopyInOptionDisplayOrder(
             IWXConfiguratorBOMv3,
             TempDisplayOrderedIWXConfiguratorBOMv3);
+        ConfigurationNodeCount += TempDisplayOrderedIWXConfiguratorBOMv3.Count();
+        if ConfigurationNodeCount > MaximumConfigurationNodes() then
+            Error(ConfigurationNodeLimitErr, MaximumConfigurationNodes());
         GroupStartLineNo := NextLineNo;
         AppendCurrentConfigurationTextInDisplayOrder(
             TempDisplayOrderedIWXConfiguratorBOMv3,
@@ -172,7 +188,9 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
                         LineQuantity,
                         TempExtendedTextLine,
                         ActiveConfigurationIDs,
-                        NextLineNo);
+                        NextLineNo,
+                        Depth + 1,
+                        ConfigurationNodeCount);
                     ActiveConfigurationIDs.Remove(
                         DisplayOrderedLineIWXConfiguratorBOMv3."Choice Configuration ID");
                     TempDisplayOrderedChildIWXConfiguratorBOMv3.Reset();
@@ -364,13 +382,20 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
     local procedure InspectConfigurationTextTypes(
         var IWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         var ActiveConfigurationIDs: Dictionary of [Code[20], Boolean];
-        var HasIncludedItemText: Boolean)
+        var HasIncludedItemText: Boolean;
+        Depth: Integer;
+        var ConfigurationNodeCount: Integer)
     var
         ChildIWXConfiguratorBOMv3: Record "IWX Configurator BOM v3";
         IWXCfgOptionChoicev3: Record "IWX Cfg Option Choice v3";
     begin
+        if Depth > MaximumConfigurationDepth() then
+            Error(ConfigurationDepthErr, MaximumConfigurationDepth());
         if IWXConfiguratorBOMv3.FindSet() then
             repeat
+                ConfigurationNodeCount += 1;
+                if ConfigurationNodeCount > MaximumConfigurationNodes() then
+                    Error(ConfigurationNodeLimitErr, MaximumConfigurationNodes());
                 if TryGetSelectedOptionChoice(IWXConfiguratorBOMv3, IWXCfgOptionChoicev3) then
                     if IWXCfgOptionChoicev3."Add Extended Text" =
                        IWXCfgOptionChoicev3."Add Extended Text"::"Include Item Extended Text"
@@ -388,7 +413,9 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
                         InspectConfigurationTextTypes(
                             ChildIWXConfiguratorBOMv3,
                             ActiveConfigurationIDs,
-                            HasIncludedItemText);
+                            HasIncludedItemText,
+                            Depth + 1,
+                            ConfigurationNodeCount);
                         ActiveConfigurationIDs.Remove(
                             IWXConfiguratorBOMv3."Choice Configuration ID");
                     end;
@@ -621,8 +648,20 @@ codeunit 50115 "PNE IWX Extended Text Mgt."
         exit(CopyStr(OutputText, NextPosition));
     end;
 
+    local procedure MaximumConfigurationDepth(): Integer
+    begin
+        exit(50);
+    end;
+
+    local procedure MaximumConfigurationNodes(): Integer
+    begin
+        exit(20000);
+    end;
+
     var
         CircularConfigurationErr: Label 'Configuration %1 contains a circular sub-configuration reference.', Comment = '%1 = configuration ID';
+        ConfigurationDepthErr: Label 'The configuration is nested more than %1 levels. Extended-text generation stops to protect against a corrupt configuration tree.', Comment = '%1 = maximum depth';
+        ConfigurationNodeLimitErr: Label 'The configuration contains more than %1 rows. Extended-text generation stops to protect performance.', Comment = '%1 = maximum node count';
         DutchLanguageCodeLbl: Label 'NLD', Locked = true;
         QuantityPrefixLbl: Label '%1x ', Comment = '%1 = item quantity';
 }

@@ -10,6 +10,7 @@ pageextension 50164 "PNE Firm Planned Prod. Order" extends "Firm Planned Prod. O
         {
             action(PNEFrameSpecification)
             {
+                AccessByPermission = codeunit "PNE Frame Spec. Action Mgt." = X;
                 ApplicationArea = All;
                 Caption = 'Frame Specification';
                 Image = PrintReport;

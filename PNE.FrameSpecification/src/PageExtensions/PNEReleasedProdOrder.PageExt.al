@@ -10,6 +10,7 @@ pageextension 50159 "PNE Released Prod. Order" extends "Released Production Orde
         {
             action(PNEFrameSpecification)
             {
+                AccessByPermission = codeunit "PNE Frame Spec. Action Mgt." = X;
                 ApplicationArea = All;
                 Caption = 'Frame Specification';
                 Image = PrintReport;

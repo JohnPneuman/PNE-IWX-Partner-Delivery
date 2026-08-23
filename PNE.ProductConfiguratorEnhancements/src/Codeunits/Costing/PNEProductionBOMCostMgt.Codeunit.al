@@ -14,19 +14,24 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
         CalculationDate: Date): Decimal
     var
         BOMPath: List of [Code[20]];
+        BOMNodeCount: Integer;
     begin
         exit(
             CalculateNonInventoryBOMCost(
                 ProductionBOMNo,
                 CalculationDate,
-                BOMPath));
+                BOMPath,
+                1,
+                BOMNodeCount));
     end;
 
 
     local procedure CalculateNonInventoryBOMCost(
         ProductionBOMNo: Code[20];
         CalculationDate: Date;
-        var BOMPath: List of [Code[20]]): Decimal
+        var BOMPath: List of [Code[20]];
+        Depth: Integer;
+        var BOMNodeCount: Integer): Decimal
     var
         ProductionBOMHeader: Record "Production BOM Header";
         ProductionBOMLine: Record "Production BOM Line";
@@ -36,6 +41,12 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
     begin
         if ProductionBOMNo = '' then
             exit(0);
+
+        if Depth > MaximumBOMDepth() then
+            Error(BOMDepthErr, ProductionBOMNo, MaximumBOMDepth());
+        BOMNodeCount += 1;
+        if BOMNodeCount > MaximumBOMNodes() then
+            Error(BOMNodeLimitErr, MaximumBOMNodes());
 
         // Beveiliging tegen een circulaire BOM:
         // BOM-A bevat BOM-B en BOM-B bevat weer BOM-A.
@@ -90,11 +101,16 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
 
         if ProductionBOMLine.FindSet() then
             repeat
+                BOMNodeCount += 1;
+                if BOMNodeCount > MaximumBOMNodes() then
+                    Error(BOMNodeLimitErr, MaximumBOMNodes());
                 TotalCost +=
                     CalculateNonInventoryBOMLineCost(
                         ProductionBOMLine,
                         CalculationDate,
-                        BOMPath);
+                        BOMPath,
+                        Depth,
+                        BOMNodeCount);
             until ProductionBOMLine.Next() = 0;
 
         BOMPath.Remove(ProductionBOMNo);
@@ -106,7 +122,9 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
     local procedure CalculateNonInventoryBOMLineCost(
         ProductionBOMLine: Record "Production BOM Line";
         CalculationDate: Date;
-        var BOMPath: List of [Code[20]]): Decimal
+        var BOMPath: List of [Code[20]];
+        Depth: Integer;
+        var BOMNodeCount: Integer): Decimal
     var
         ComponentItem: Record Item;
         LineQuantity: Decimal;
@@ -147,7 +165,9 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
                         CalculateNonInventoryBOMCost(
                             ProductionBOMLine."No.",
                             CalculationDate,
-                            BOMPath);
+                            BOMPath,
+                            Depth + 1,
+                            BOMNodeCount);
 
                     exit(
                         ChildBOMCost *
@@ -180,4 +200,18 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
 
         exit(CostQuantity);
     end;
+
+    local procedure MaximumBOMDepth(): Integer
+    begin
+        exit(50);
+    end;
+
+    local procedure MaximumBOMNodes(): Integer
+    begin
+        exit(20000);
+    end;
+
+    var
+        BOMDepthErr: Label 'Production BOM %1 is nested more than %2 levels. The non-inventory cost calculation stops to protect against a corrupt BOM tree.', Comment = '%1=production BOM no.;%2=maximum depth';
+        BOMNodeLimitErr: Label 'The Production BOM tree contains more than %1 rows. The non-inventory cost calculation stops to protect performance.', Comment = '%1=maximum node count';
 }

@@ -34,14 +34,17 @@ Report 50158 `PNE Frame Specification` is opened by the `Frame Specification`
 action on Simulated, Firm Planned and Released Production Order. Each action
 opens the same report for exactly the selected production order. Its default
 layout is the Word file
-`apps/PNE.FrameSpecification/Layouts/PNEFrameSpecification.docx`, registered
+`PNE.FrameSpecification/Layouts/PNEFrameSpecification.docx`, registered
 as `FrameSpecificationWord`. Business Central report-layout selection can
 replace or customize the `.docx` without changing calculation code.
 
 ## Source resolution
 
-The report first looks for a BMP configuration on the source sales order. If
-none is available, it looks up the configured source item and then production
-order lines. It fails clearly when no configuration containing `I_FRM` can be
+The report first matches BMP configurations on the source Sales Quote/Order to the
+actual top production-order Item. If none is available, it looks up the
+configured source Item and then production-order lines. Repeated rows from one
+configuration are harmless; different matching configuration IDs stop with a
+clear ambiguity error instead of selecting the first Sales Line or stored Item
+snapshot. It fails clearly when no configuration containing `I_FRM` can be
 found. Configuration records are copied into temporary buffers and recursive
-configuration cycles stop with an error.
+cycles, more than 50 levels or more than 20,000 rows stop with an error.

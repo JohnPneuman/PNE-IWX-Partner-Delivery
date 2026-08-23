@@ -101,6 +101,31 @@ current-session lookup workaround after IWX has validated the permanent
 Option Choice; it does not write Business Rule data or initiate a Rule Engine
 evaluation. See `../../docs/iwx-business-rules-compatibility.md`.
 
+## Optional routing operations
+
+After IWX has finished creating or reconfiguring an Item, the app checks the
+Item Category **Choices Routing**. Every operation with a Routing Link Code
+must also exist in the configured Item routing. A missing optional operation
+is added with zero Setup Time and zero Run Time; an already selected operation
+and its calculated time are never overwritten. This allows standard Business
+Central Production BOM expansion to find links such as `COD`, even when the
+customer did not select that optional work step.
+
+Normal Business Central production-order refresh never changes the shared
+Item-routing master data. For an older configured Item that still misses an
+optional zero-time operation, an authorized user can choose **Optionele
+routing herstellen** on the Item Card. That explicit action resolves the
+Item's single stored IWX configuration read-only and adds only missing
+operations to its base routing. An Item with an ambiguous configuration, a
+target-routing version or a Choices-Routing version is left unchanged and must be reviewed
+separately. Refresh only a clean, unconsumed production order afterward when
+that repaired master routing must be transferred to the order.
+
+This post-processing changes only standard Routing Header/Line records of the
+configured Item. It neither changes IWX configuration or Business Rule
+records nor invokes or replaces the IWX Rule Engine. A conflicting operation
+number blocks safely for engineering review.
+
 ## Dependency
 
 Required dependencies:
@@ -108,7 +133,7 @@ Required dependencies:
 - Insight Works Product Configurator 4.1.9649.1;
 - Blue Ace Pneuman 1.0.202606.5.
 
-The app identity is `b4514682-8029-4a3d-ad9d-e887cdf51b0f`, version `1.0.0.4`;
+The app identity is `b4514682-8029-4a3d-ad9d-e887cdf51b0f`, version `1.0.0.8`;
 the required Business Central application is 28.0 and runtime is 17.0. Verify
 the exact dependency app IDs and public symbol assumptions in
 `../../docs/dependencies.md` before compiling against an upgraded dependency.
@@ -119,5 +144,6 @@ Run the scenarios in `../../docs/test-plan.md`, especially existing and new
 choices, filtering, immediate Unit Cost display, mixed and nested BOM costs,
 profit-group defaults and overrides, manual/when-used pricing, Smart Item
 Number Option Text, configured text ordering and nesting, and reopening the
-configurator. Treat circular BOMs as invalid test data and verify that circular
-child configurations stop with the documented error.
+configurator. Treat circular BOMs as invalid test data and verify that circular,
+deeper-than-50-level or larger-than-20,000-row child trees stop with the
+documented error.

@@ -13,6 +13,9 @@ credentials. A clean exported archive does not include Git history.
 - `PNE.FrameSpecification/`: compile-ready AL project for the Simulated, Firm
   Planned and Released production-order frame-specification report, including its Word layout
   `Layouts/PNEFrameSpecification.docx`.
+- `PNE.ProductionOrderReconciliation/`: independent compile-ready AutoCAD PIL,
+  production-order and commercial audit app, including its Word proposal layout
+  and example import file.
 - `docs/partner-installation-guide.md`: installation, configuration, and
   acceptance handover.
 - `docs/functional-specification.md`: business purpose, functional behavior,
@@ -29,15 +32,22 @@ credentials. A clean exported archive does not include Git history.
 - `docs/frame-specification.md` and `docs/frame-specification-test-plan.md`:
   Frame Specification data ownership, Word-layout information, and required
   Sandbox acceptance scenarios.
+- `docs/production-order-reconciliation.md` and its test plan: the complete
+  four-step PIL workflow, safety boundaries, routing/quote behavior and manual
+  Sandbox acceptance matrix.
+- `docs/release-manifest-2026-08-23.md`: current source versions, local package
+  hashes and the remaining exact-target-Sandbox release gates.
 
 ## Insight Works Business Rules compatibility
 
-Both apps leave Insight Works Business Rule definitions and evaluation
+All three apps leave Insight Works Business Rule definitions and evaluation
 lifecycle under IWX ownership. Product Configurator Enhancements uses only
 public extension points and does not handle Business Rule events. Frame
 Specification has no event subscribers; it reads configuration data into
 temporary buffers and does not modify Product Configurator records. Its frame
 rules are Pneuman-owned report configuration, not IWX Business Rules.
+Production Order Reconciliation has no IWX or Bluace app dependency and uses
+only standard Business Central production, Item/BOM, quote and audit records.
 
 Product Configurator Enhancements can optionally map an exact Config. Template
 Item Disc. Group placeholder such as `{I_FA}` to the selected IWX Choice Code.
@@ -65,6 +75,11 @@ Business Central report-layout selection without changing AL code.
 6. Require zero errors and warnings from CodeCop, UICop, and
    PerTenantExtensionCop and report every Info diagnostic.
 7. Perform and retain the relevant Sandbox tests before release.
+
+Current source versions are Frame Specification 1.0.0.8, Product Configurator
+Enhancements 1.0.0.8 and Production Order Reconciliation 2.7.0.9. Rebuild them
+against the exact symbols from the target Sandbox; do not reuse the local hash
+manifest if the resulting bytes differ.
 
 No package is supplied in this source delivery. Build a new package from the
 reviewed source, preserve the app ID and all existing object/field IDs, and do
