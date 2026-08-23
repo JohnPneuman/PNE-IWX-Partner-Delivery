@@ -1,7 +1,7 @@
 # Blu Ace delivery — Pneuman IWX extensions
 
 This folder is a self-contained source delivery for Blu Ace. It contains only
-what is needed to review, compile, modify, test, and package the extension. It
+what is needed to review, compile, modify, test, and package the extensions. It
 includes delivery-scoped agent quality instructions, but not Pneuman's internal
 use cases, downloaded symbols, local launch settings, generated packages, or
 credentials. A clean exported archive does not include Git history.
@@ -11,8 +11,8 @@ credentials. A clean exported archive does not include Git history.
 - `PNE.ProductConfiguratorEnhancements/`: compile-ready AL project, including
   `app.json`, AL source, analyzer settings, and the app's technical README.
 - `PNE.FrameSpecification/`: compile-ready AL project for the Simulated, Firm
-  Planned and Released production-order frame-specification report, including its Word layout
-  `Layouts/PNEFrameSpecification.docx`.
+  Planned and Released production-order frame-specification report, including
+  its Word layout `Layouts/PNEFrameSpecification.docx`.
 - `PNE.ProductionOrderReconciliation/`: independent compile-ready AutoCAD PIL,
   production-order and commercial audit app, including its Word proposal layout
   and example import file.
@@ -20,13 +20,12 @@ credentials. A clean exported archive does not include Git history.
   acceptance handover.
 - `docs/functional-specification.md`: business purpose, functional behavior,
   limits, and upgrade impact.
-- `docs/current-behavior.md`: implementation-accurate behavior and edge
-  cases.
+- `docs/current-behavior.md`: implementation-accurate behavior and edge cases.
 - `docs/dependencies.md`: exact dependency identities and public symbols.
 - `docs/test-plan.md`: Sandbox regression and acceptance scenarios.
 - `docs/iwx-business-rules-compatibility.md`: compatibility boundary proving
-  that neither app changes, deletes, suppresses, or reimplements Insight Works
-  Product Configurator Business Rules.
+  that none of the apps changes, deletes, suppresses, or reimplements Insight
+  Works Product Configurator Business Rules.
 - `docs/transfer-audit.md`: source-audit result, reviewed IWX writes and
   `IsHandled` paths, and remaining Sandbox acceptance evidence.
 - `docs/frame-specification.md` and `docs/frame-specification-test-plan.md`:
@@ -35,8 +34,8 @@ credentials. A clean exported archive does not include Git history.
 - `docs/production-order-reconciliation.md` and its test plan: the complete
   four-step PIL workflow, safety boundaries, routing/quote behavior and manual
   Sandbox acceptance matrix.
-- `docs/release-manifest-2026-08-23.md`: current source versions, local package
-  hashes and the remaining exact-target-Sandbox release gates.
+- `docs/release-manifest-2026-08-23.md`: the one package to deploy in this
+  release, its hash and the remaining exact-target-Sandbox release gates.
 
 ## Insight Works Business Rules compatibility
 
@@ -47,7 +46,8 @@ Specification has no event subscribers; it reads configuration data into
 temporary buffers and does not modify Product Configurator records. Its frame
 rules are Pneuman-owned report configuration, not IWX Business Rules.
 Production Order Reconciliation has no IWX or Bluace app dependency and uses
-only standard Business Central production, Item/BOM, quote and audit records.
+only standard Business Central production, Item/BOM, quote, Extended Text and
+audit records.
 
 Product Configurator Enhancements can optionally map an exact Config. Template
 Item Disc. Group placeholder such as `{I_FA}` to the selected IWX Choice Code.
@@ -77,14 +77,15 @@ Business Central report-layout selection without changing AL code.
 7. Perform and retain the relevant Sandbox tests before release.
 
 Current source versions are Frame Specification 1.0.0.8, Product Configurator
-Enhancements 1.0.0.8 and Production Order Reconciliation 2.7.0.9. Rebuild them
-against the exact symbols from the target Sandbox; do not reuse the local hash
-manifest if the resulting bytes differ.
+Enhancements 1.0.0.8 and Production Order Reconciliation 2.7.0.10. Only
+Reconciliation 2.7.0.10 is a deployment artifact in this release. The other two
+apps are rebuilt only for validation; do not redeploy a different binary under
+their unchanged 1.0.0.8 version. Rebuild all apps against the exact symbols from
+the target Sandbox and update the Reconciliation hash if its bytes differ.
 
-No package is supplied in this source delivery. Build a new package from the
-reviewed source, preserve the app ID and all existing object/field IDs, and do
-not publish, install, upgrade, or target production without the applicable
-release approval.
+Generated packages remain ignored by Git. Preserve every app ID and all
+existing object/field IDs, and do not publish, install, upgrade, or target
+production without the applicable release approval.
 
 ## Updating this delivery
 

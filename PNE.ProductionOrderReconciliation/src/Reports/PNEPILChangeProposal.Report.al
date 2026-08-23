@@ -233,6 +233,8 @@ report 50196 "PNE PIL Change Proposal"
         Clear(ReversedQuoteLineCount);
         Clear(TotalEstimatedCostDifference);
         Clear(QuoteSummaryText);
+        Clear(QuoteLinkCurrentCache);
+        Clear(QuoteLinkVerificationCache);
 
         PNEPILLine.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
         if PNEPILLine.FindSet() then
@@ -264,7 +266,7 @@ report 50196 "PNE PIL Change Proposal"
                         if PNEPILChangeLine."Quantity Difference" > 0 then
                             UnquotedPositiveChangeLineCount += 1;
                     end else
-                        if TryIsCurrentQuoteLine(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent) then begin
+                        if GetCachedQuoteLineStatus(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent) then begin
                             if QuoteLineIsCurrent then begin
                                 QuoteLineKey := GetQuoteLineKey(PNEPILChangeLine);
                                 if not CurrentQuoteLineKeys.ContainsKey(QuoteLineKey) then begin
@@ -321,12 +323,12 @@ report 50196 "PNE PIL Change Proposal"
         if CommercialLineCount = 0 then
             exit(NoQuoteRequiredTxt);
         if ReversedLineCount > 0 then
-            exit(StrSubstNo(ReversedQuoteLinesTxt, ReversedLineCount, UnquotedCommercialLineCount));
+            exit(CopyStr(StrSubstNo(ReversedQuoteLinesTxt, ReversedLineCount, UnquotedCommercialLineCount), 1, 100));
         if QuoteCount = 0 then
             exit(NoQuoteLinesTxt);
         if UnquotedCommercialLineCount = 0 then
             exit(AllQuoteLinesTxt);
-        exit(StrSubstNo(QuotedAndUnquotedLinesTxt, QuoteCount, UnquotedCommercialLineCount));
+        exit(CopyStr(StrSubstNo(QuotedAndUnquotedLinesTxt, QuoteCount, UnquotedCommercialLineCount), 1, 100));
     end;
 
     local procedure GetChangeCommercialStatus(PNEPILChangeLine: Record "PNE PIL Change Line"): Text[100]
@@ -344,7 +346,7 @@ report 50196 "PNE PIL Change Proposal"
             exit(QuoteReversedTxt);
         if PNEPILChangeLine."Sales Quote No." = '' then
             exit(NotAddedToQuoteTxt);
-        if not TryIsCurrentQuoteLine(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent) then
+        if not GetCachedQuoteLineStatus(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent) then
             exit(QuoteLinkCannotBeVerifiedTxt);
         if not QuoteLineIsCurrent then
             exit(QuoteLinkNeedsReviewTxt);
@@ -354,6 +356,24 @@ report 50196 "PNE PIL Change Proposal"
     local procedure GetQuoteLineKey(PNEPILChangeLine: Record "PNE PIL Change Line"): Text
     begin
         exit(PNEPILChangeLine."Sales Quote No." + '|' + Format(PNEPILChangeLine."Sales Quote Line No."));
+    end;
+
+    local procedure GetCachedQuoteLineStatus(PNEPILSalesQuoteMgt: Codeunit "PNE PIL Sales Quote Mgt."; PNEPILChangeLine: Record "PNE PIL Change Line"; var QuoteLineIsCurrent: Boolean): Boolean
+    var
+        QuoteLineKey: Text;
+        QuoteLineCanBeVerified: Boolean;
+    begin
+        QuoteLineKey := GetQuoteLineKey(PNEPILChangeLine);
+        if QuoteLinkVerificationCache.Get(QuoteLineKey, QuoteLineCanBeVerified) then begin
+            QuoteLinkCurrentCache.Get(QuoteLineKey, QuoteLineIsCurrent);
+            exit(QuoteLineCanBeVerified);
+        end;
+
+        Clear(QuoteLineIsCurrent);
+        QuoteLineCanBeVerified := TryIsCurrentQuoteLine(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent);
+        QuoteLinkVerificationCache.Add(QuoteLineKey, QuoteLineCanBeVerified);
+        QuoteLinkCurrentCache.Add(QuoteLineKey, QuoteLineIsCurrent);
+        exit(QuoteLineCanBeVerified);
     end;
 
     local procedure QuantityTolerance(): Decimal
@@ -409,6 +429,8 @@ report 50196 "PNE PIL Change Proposal"
 
     var
         CompanyInformation: Record "Company Information";
+        QuoteLinkCurrentCache: Dictionary of [Text, Boolean];
+        QuoteLinkVerificationCache: Dictionary of [Text, Boolean];
         CompanyName: Text[100];
         ChangeCommercialStatusText: Text[100];
         ChangeCarrierIdentityText: Text[250];
@@ -451,12 +473,12 @@ report 50196 "PNE PIL Change Proposal"
         NoQuoteRequiredTxt: Label 'Geen netto meer- of minderwerkregel heeft een offerte-overdracht nodig.';
         NotAddedToQuoteTxt: Label 'Nog niet aan een offerte toegevoegd.';
         PreparedForApplyTxt: Label 'Technisch gecontroleerd en klaar om toe te passen.';
-        QuoteLinkNeedsReviewTxt: Label 'Offertekoppeling controleren: de actuele offertregel wijkt af van dit voorstel.';
+        QuoteLinkNeedsReviewTxt: Label 'Offertekoppeling controleren: artikelregel of gekoppelde artikeltekst wijkt af van dit voorstel.';
         QuoteLinkCannotBeVerifiedTxt: Label 'Offertekoppeling kan met de huidige rechten niet worden gecontroleerd.';
         QuoteReversedTxt: Label 'Offerte-overdracht is teruggedraaid; kies zo nodig opnieuw een offerte.';
-        ReversedQuoteLinesTxt: Label '%1 samengevoegde offertregel(s) zijn teruggedraaid; %2 technische regel(s) vragen commerciële beoordeling.', Comment = '%1 = reversed quote line count, %2 = technical change line count requiring commercial review';
+        ReversedQuoteLinesTxt: Label '%1 offertregel(s) teruggedraaid; %2 technische regel(s) vragen commerciële beoordeling.', Comment = '%1 = reversed quote line count, %2 = technical change line count requiring commercial review';
         ReversedQuoteReviewTxt: Label 'Minstens één offerte-overdracht is teruggedraaid; kies opnieuw een offerte of beoordeel commercieel.';
-        QuotedAndUnquotedLinesTxt: Label '%1 samengevoegde netto regel(s) zijn gekoppeld aan een actuele offerte; %2 technische regel(s) vragen commerciële beoordeling.', Comment = '%1 = net quote line count linked to a current sales quote, %2 = technical change line count needing commercial review';
+        QuotedAndUnquotedLinesTxt: Label '%1 nettoregel(s) gekoppeld; %2 technische regel(s) vragen commerciële beoordeling.', Comment = '%1 = net quote line count linked to a current sales quote, %2 = technical change line count needing commercial review';
         SomeCommercialChangesUnquotedTxt: Label 'Een deel van het netto meer- en minderwerk vraagt commerciële beoordeling vóór offerte-overdracht.';
         DocumentTitleLbl: Label 'PIL-wijzigingsvoorstel';
         DirectComponentCommercialReviewTxt: Label 'Los toegevoegd productiecomponent: handmatige commerciële beoordeling; niet automatisch naar offerte.';

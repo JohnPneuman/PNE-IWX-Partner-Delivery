@@ -27,13 +27,13 @@ symbols. AA0247 is now an Error rather than accepted baseline debt.
 |---|---:|---:|---:|
 | PNE Frame Specification 1.0.0.8 | 0 | 0 | 0 |
 | PNE Product Configurator Enhancements 1.0.0.8 | 0 | 0 | 0 |
-| PNE Production Order Reconciliation 2.7.0.9 | 0 | 0 | 0 |
+| PNE Production Order Reconciliation 2.7.0.10 | 0 | 0 | 0 |
 
 The ignored evidence is written to each app's
 `.build/validation-diagnostics.json`. Namespace consumer and Sandbox upgrade
 risks are recorded in `namespace-compatibility-audit.md`.
 
-The final 2.7.0.9 run compiled all three current apps and reported zero errors,
+The final 2.7.0.10 run compiled all three current apps and reported zero errors,
 zero warnings and zero informational diagnostics for each. The Reconciliation
 app-specific migration and Sandbox risks are recorded in
 `production-order-reconciliation.md` and its manual acceptance matrix in
@@ -46,7 +46,7 @@ validated on 2026-08-20 with zero errors and warnings, and one informational
 AA0232 on its `Used Cost Sum` FlowField. That app schema and source were
 replaced by the clean 2.0.0.0 rebuild after the old Sandbox app was removed.
 AA0232 is therefore **not** current baseline debt and must not be treated as a
-warning or known diagnostic for v2.7.0.9.
+warning or known diagnostic for v2.7.0.10.
 
 ## Historical analyzer details (pre-2026-08-20)
 

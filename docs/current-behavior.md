@@ -273,19 +273,35 @@ across different independent carriers remains a manual allocation decision.
 Prepare also creates one read-only proposal line per carrier, with the old and
 proposed quantity, the delta, PIL details and a current production cost
 indication. **Print Change Proposal** only reports this information. A user may
-hand positive deltas to a selected existing Sales Quote only when it is Open,
-not accepted and not expired. The app appends new Item lines; it never edits
-existing quote or configurator lines. Standard Business Central Sales Line
-validation supplies the quote price, not IWX formulas. Negative/zero deltas
-remain manual commercial review. The user needs separate normal Business
+hand grouped non-zero original-to-final net deltas to a selected existing
+Sales Quote only when it is Open, not accepted and not expired. Positive net
+deltas become morework Item lines, negative net deltas become lesswork Item
+lines and net zero creates no line. The app never edits existing quote or
+configurator lines. Standard Business Central Sales Line validation supplies
+the quote price, not IWX formulas.
+
+For every created Item line with **Automatic Ext. Texts** enabled, applicable
+standard Business Central Extended Text for Sales Quote, quote document date
+and quote language is inserted as
+attached text. Every non-empty source text line shows the net quantity;
+lesswork is explicitly labelled and uses the absolute quantity. Long text is
+word-wrapped without
+truncation. The PIL app does not invoke the IWX configured-text generator or
+configuration tree. Existing, missing, added or changed attached text is part
+of commercial report and reversal integrity; text-only drift does not block the
+technical production-order Apply. The linked Item line itself must still match
+its immutable snapshot. The user needs separate normal Business
 Central Sales Quote/Sales Line read-and-create rights; **PNE PIL Reconcile**
 intentionally grants no Sales Header, Sales Line or sales-page rights. When a
 user changes **Naar deze carrier** on a *Gereed om toe te passen* dossier before handoff,
 the status immediately becomes *Verdeling nodig*: **Stap 2 - Controleer verdeling**
 must rebuild the proposal before handoff or Apply can continue. After quote
-linking, the technical proposal cannot be re-prepared or reallocated; the
-report live-checks whether linked quote lines still exist and still match their
-item, variant, UOM and quantity. If the user has lost Sales Line read access,
+linking, the technical proposal cannot be re-prepared or reallocated. The
+recommended order is technical Apply first and quote handoff second; handoff
+before Apply requires a warning confirmation. The report live-checks whether
+linked quote lines and their attached text still
+exist and still match item, variant, UOM, quantity and expected standard text.
+If the user has lost Sales Line read access,
 the technical report remains usable and states that the quote link cannot be
 verified with the current permissions; that is commercial review, not a report
 failure or automatic repair.

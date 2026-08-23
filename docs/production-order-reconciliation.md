@@ -401,6 +401,27 @@ geen regel. Alle bijdragende technische regels verwijzen naar dezelfde
 offertregel en worden samen gecontroleerd. Terugdraaien verwijdert die gedeelde
 regel eenmaal en bewaart de audit per technische bronregel.
 
+Versie 2.7.0.10 voegt bij zo'n netto meer- of minderwerkregel automatisch de
+geldige standaard Business Central-artikeltekst toe wanneer **Automatic Ext.
+Texts** en **Sales Quote** zijn ingeschakeld. De
+tekstselectie volgt de documentdatum en taal van de gekozen offerte. Iedere
+niet-lege brontekstregel begint bij meerwerk met het netto aantal, bijvoorbeeld
+`2x`, en bij minderwerk met **Minderwerk** en het absolute aantal. Lange teksten
+worden over
+gekoppelde tekstregels verdeeld zonder stil afkappen. Heeft het artikel geen
+toepasselijke standaard tekst, dan blijft de gewone offerteregel geldig zonder
+tekst.
+
+Deze toevoeging leest uitsluitend de standaard Extended Text-inrichting. Zij
+opent geen IWX-configuratie, bouwt geen configuratietekst opnieuw op en roept
+geen IWX Business Rule aan. De gekoppelde tekstregels volgen daardoor de
+normale offerte-/order-/factuurdocumentstroom. De gebruikte verkooplay-out moet
+tekstregels uiteraard wel afdrukken. Een later verwijderde, toegevoegde of
+gewijzigde gekoppelde tekstregel maakt de commerciële koppeling
+beoordelingsplichtig en blokkeert automatisch terugdraaien. Technische Apply
+verifieert de onveranderde artikelregel en technische snapshot, maar wordt niet
+meer door een losse tekst- of tekststamwijziging geblokkeerd.
+
 Voor een live productiecomponent of productieregel volgt de analyse eerst de
 locatie-/variantafhankelijke Stockkeeping Unit. Een niet-lege SKU **Production
 BOM No.** wint van de Itemkaart; zonder SKU-BOM geldt de Item-BOM. Daarmee
@@ -498,6 +519,12 @@ als losse tabellen afgedrukt.
 Met **Meer- en minderwerk naar bestaande offerte** kiest de gebruiker zelf een
 reeds bestaande Sales Quote. De app accepteert uitsluitend een open,
 niet-geaccepteerde en niet-verlopen offerte. Zij maakt geen nieuwe offerte.
+De normale veilige volgorde is: voorstel controleren, **Pas veilig toe**, daarna
+de offerteoverdracht. Wie toch vanuit *Gereed om toe te passen* overdraagt,
+krijgt eerst een waarschuwing. Een gekoppelde offerte mag dan niet vóór Apply
+worden verwijderd of naar een order worden omgezet, omdat de opgeslagen
+artikelregel anders niet meer controleerbaar is. Ook prijs, omschrijving en
+andere velden van de aangemaakte artikelregel blijven tot Apply ongewijzigd.
 
 - De app groepeert technische voorstelregels op artikel, variant en eenheid. Per
   groep telt zij alle oorspronkelijke aantallen en alle definitieve aantallen;
@@ -516,9 +543,11 @@ niet-geaccepteerde en niet-verlopen offerte. Zij maakt geen nieuwe offerte.
   rekent hun gezamenlijke nettohoeveelheid opnieuw uit.
 
 Zolang een actieve offerteoverdracht bestaat, mag de technische snapshot niet
-opnieuw worden opgebouwd of herverdeeld. Vóór Apply moeten zowel de
-voorstelregels als de actieve offertregels nog precies gelijk zijn aan de
-opgeslagen snapshot. De app overschrijft een gewijzigde offerte nooit.
+opnieuw worden opgebouwd of herverdeeld. Vóór Apply moeten de voorstelregels en
+de gekoppelde actieve **artikelregel** nog precies gelijk zijn aan de opgeslagen
+snapshot. Gekoppelde tekst wordt voor rapportage en veilig terugdraaien apart
+gecontroleerd; een uitsluitend commerciële tekstwijziging blokkeert technische
+Apply niet. De app overschrijft een gewijzigde offerte nooit.
 
 Vóór technische Apply kan **Offerteoverdracht terugdraaien** uitsluitend de
 nog ongewijzigde regels verwijderen die dit dossier zelf heeft toegevoegd. Een

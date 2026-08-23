@@ -2,17 +2,16 @@
 
 Status: **source-complete and locally validated; not yet production-approved**.
 
-| App | Version | Local package | SHA-256 |
+| App to deploy | Version | Local package | SHA-256 |
 |---|---:|---|---|
-| PNE Frame Specification | 1.0.0.8 | `PNE.FrameSpecification/.build/PNE-Frame-Specification-1.0.0.8.app` | `B7AD9FA8A4F4696C21CD92D7B1805D3AC38B2FA126AF13525C6FEC8FA33CA852` |
-| PNE Product Configurator Enhancements | 1.0.0.8 | `PNE.ProductConfiguratorEnhancements/.build/PNE-Product-Configurator-Enhancements-1.0.0.8.app` | `1CF165D314AB0FBBBF72C76F9FB1A3C1ABBF5034CC82F83B533BFA8B758765A9` |
-| PNE Production Order Reconciliation | 2.7.0.9 | `PNE.ProductionOrderReconciliation/.build/PNE-Production-Order-Reconciliation-2.7.0.9.app` | `A3F9957AC8F6D405871672FADB5D56CD1E0E59F1549644876EB141C2362432F7` |
+| PNE Production Order Reconciliation | 2.7.0.10 | `PNE.ProductionOrderReconciliation/.build/PNE-Production-Order-Reconciliation-2.7.0.10.app` | `ED297D19DCB8A802EE54D18904BD4D0703F6FB3D3715FAD1AAA8327D556C9979` |
 
-The packages are intentionally ignored by Git and are not included in this
-source delivery. The hashes above identify the packages produced during the
-partner-delivery validation. Rebuild all three apps from this reviewed source
-against the exact target-Sandbox symbols and record new hashes before
-installation.
+PNE Frame Specification 1.0.0.8 and PNE Product Configurator Enhancements
+1.0.0.8 were recompiled only as validation dependencies and contain no source
+change in this release. **Do not redeploy their newly generated local binaries
+under the unchanged version number.** Keep the already approved/installed
+1.0.0.8 packages. The package above is intentionally ignored by Git; copy only
+that exact Reconciliation package to the controlled release folder.
 
 ## Local validation evidence
 
@@ -29,9 +28,9 @@ installation.
 
 The reported target environment is Business Central 28.4.53241.53504, while
 the retained local Base Application symbols are 28.3. Re-download the exact
-target Sandbox symbols, rebuild all three packages and repeat the clean
-validation before production. Recompute and replace the hashes if the package
-bytes change.
+target Sandbox symbols, rebuild all three apps for validation and repeat the
+clean checks before production. Recompute the Reconciliation hash if its package
+bytes change; do not ship rebuilt unchanged-version dependency packages.
 
 Execute and retain the dated Sandbox evidence in:
 

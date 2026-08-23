@@ -491,7 +491,7 @@ codeunit 50178 "PNE PIL Mgt."
         CheckApplySafety(PNEPILHeader);
         CheckQuotedProposalStillMatchesTargets(PNEPILHeader);
         if PNEPILSalesQuoteMgt.HasActiveQuoteHandoff(PNEPILHeader) then
-            PNEPILSalesQuoteMgt.EnsureActiveQuoteLinksCurrent(PNEPILHeader);
+            PNEPILSalesQuoteMgt.EnsureActiveQuoteItemLinksCurrent(PNEPILHeader);
     end;
 
     procedure SetPILLineIgnore(var PNEPILLine: Record "PNE PIL Line"; IgnoreReason: Text)
@@ -4640,19 +4640,21 @@ codeunit 50178 "PNE PIL Mgt."
     local procedure GetAllocatedQuantity(PNEPILHeader: Record "PNE PIL Header"; PNEPILLine: Record "PNE PIL Line"): Decimal
     var
         PNEPILTarget: Record "PNE PIL Target";
+        TargetKind: Enum "PNE PIL Target Kind";
     begin
         PNEPILTarget.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
         PNEPILTarget.SetRange("PIL Line No.", PNEPILLine."Line No.");
         if HasStructuralTarget(PNEPILHeader, PNEPILLine."Line No.") then
-            PNEPILTarget.SetRange(Kind, PNEPILTarget.Kind::"Structural driver")
+            TargetKind := TargetKind::"Structural driver"
         else
             if HasDirectComponentTarget(PNEPILHeader, PNEPILLine."Line No.") then
-                PNEPILTarget.SetRange(Kind, PNEPILTarget.Kind::"Direct component addition")
+                TargetKind := TargetKind::"Direct component addition"
             else
                 if HasPointCarrierAdditionTarget(PNEPILHeader, PNEPILLine."Line No.") then
-                    PNEPILTarget.SetRange(Kind, PNEPILTarget.Kind::"Point carrier addition")
-        else
-            PNEPILTarget.SetRange(Kind, PNEPILTarget.Kind::"CALC replacement");
+                    TargetKind := TargetKind::"Point carrier addition"
+                else
+                    TargetKind := TargetKind::"CALC replacement";
+        PNEPILTarget.SetRange(Kind, TargetKind);
         PNEPILTarget.CalcSums("Allocated PIL Quantity");
         exit(PNEPILTarget."Allocated PIL Quantity");
     end;

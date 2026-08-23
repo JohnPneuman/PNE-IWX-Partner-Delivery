@@ -215,7 +215,7 @@ page 50183 "PNE PIL Reconciliation"
                 Enabled = CanAddToSalesQuote;
                 Visible = CanAddToSalesQuote;
                 Image = Quote;
-                ToolTip = 'Groepeert de oorspronkelijke en definitieve carrieraantallen per artikel, variant en eenheid en voegt alleen het netto meer- of minderwerk als nieuwe regels toe aan een open bestaande offerte. Bestaande offertregels worden nooit gewijzigd.';
+                ToolTip = 'Groepeert de oorspronkelijke en definitieve carrieraantallen per artikel, variant en eenheid en voegt alleen het netto meer- of minderwerk als nieuwe regels toe aan een open bestaande offerte. Toepasselijke standaard artikeltekst komt mee wanneer Automatische uitgebreide teksten op het artikel aanstaat. Bestaande offertregels worden nooit gewijzigd.';
 
                 trigger OnAction()
                 var
@@ -223,7 +223,10 @@ page 50183 "PNE PIL Reconciliation"
                     SalesQuoteNo: Code[20];
                 begin
                     if PNEPILSalesQuoteMgt.AddNetChangesToSelectedSalesQuote(Rec, SalesQuoteNo) then begin
-                        Message(AddedToQuoteMsg, SalesQuoteNo);
+                        if Rec.Status = Rec.Status::Prepared then
+                            Message(AddedToQuoteBeforeApplyMsg, SalesQuoteNo)
+                        else
+                            Message(AddedToQuoteMsg, SalesQuoteNo);
                         CurrPage.Update(false);
                         if Confirm(OpenSalesQuoteQst, false, SalesQuoteNo) then
                             PNEPILSalesQuoteMgt.OpenSalesQuote(SalesQuoteNo);
@@ -238,7 +241,7 @@ page 50183 "PNE PIL Reconciliation"
                 Enabled = CanReverseSalesQuoteHandoff;
                 Visible = CanReverseSalesQuoteHandoff;
                 Image = Undo;
-                ToolTip = 'Verwijdert alleen de nog ongewijzigde offertregels die deze PIL zelf heeft toegevoegd. Geef altijd een reden op.';
+                ToolTip = 'Verwijdert alleen de nog ongewijzigde offertregels en gekoppelde tekstregels die deze PIL zelf heeft toegevoegd. Geef altijd een reden op.';
 
                 trigger OnAction()
                 var
@@ -368,9 +371,10 @@ page 50183 "PNE PIL Reconciliation"
         CanReverseSalesQuoteHandoff: Boolean;
         NextStepText: Text[500];
         SafetyNoticeText: Text[500];
-        AddedToQuoteMsg: Label 'Het netto meer- en minderwerk is als nieuwe regels toegevoegd aan offerte %1. Controleer de berekende verkoopprijzen en bedragen.', Comment = '%1 = offerte number';
+        AddedToQuoteBeforeApplyMsg: Label 'Het netto meer- en minderwerk is toegevoegd aan offerte %1. Kies nu eerst ''Pas veilig toe''. Wijzig de aangemaakte offertregel, prijs en offerte tot dat moment niet. Controleer daarna de verkoopprijzen, bedragen en tekst.', Comment = '%1 = sales quote number';
+        AddedToQuoteMsg: Label 'Het netto meer- en minderwerk is als nieuwe regels toegevoegd aan offerte %1. Toepasselijke standaard artikelteksten staan met het netto aantal onder de nieuwe regels. Controleer de verkoopprijzen, bedragen en tekst.', Comment = '%1 = offerte number';
         AllocationNextStepTxt: Label 'Stap 2 van 4: controleer de voorgestelde verdeling. Vul alleen waar nodig ''Naar deze carrier'' in en kies daarna ''Controleer verdeling''.';
-        AllocationReadyMsg: Label 'Alle aantallen zijn verdeeld. Het voorstel is technisch klaar om te bekijken, eventueel als meerwerk op een offerte te zetten en toe te passen.';
+        AllocationReadyMsg: Label 'Alle aantallen zijn verdeeld. Bekijk het voorstel en kies daarna eerst ''Pas veilig toe''. Zet vervolgens het netto meer- en minderwerk op de bestaande offerte.';
         AppliedNextStepTxt: Label 'Afgerond: deze PIL is veilig toegepast. Open het wijzigingsvoorstel als auditdossier of zet het netto meer- en minderwerk op een bestaande offerte.';
         ApplyNoChangesQst: Label 'Deze PIL is al volledig in de huidige productieorder verwerkt of bevat alleen bewust genegeerde regels. De productieorder wordt niet opnieuw gewijzigd; het dossier wordt alleen als compleet vastgelegd. Doorgaan?';
         ApplyNoChangesSucceededMsg: Label 'De PIL voor productieorder %1 is zonder nieuwe productieorderwijzigingen als compleet vastgelegd. Het dossier blijft beschikbaar via PIL-afstemmingen.', Comment = '%1 = production order number';
@@ -379,11 +383,11 @@ page 50183 "PNE PIL Reconciliation"
         ApplySucceededMsg: Label 'De PIL is veilig toegepast op productieorder %1.\Routingcontrole per geproduceerd hoofdartikel:\%2\U keert nu terug naar de bijgewerkte productieorder. Het toegepaste dossier blijft beschikbaar via PIL-afstemmingen.', Comment = '%1 = production order number, %2 = routing impact summary';
         ImportedNextStepTxt: Label 'Stap 1 van 4: kies ''Analyseer PIL''. De app zoekt daarna automatisch de hoogste passende productiecarrier en maakt een voorstel.';
         OpenSalesQuoteQst: Label 'Offerte %1 nu openen?', Comment = '%1 = offerte number';
-        PreparedNextStepTxt: Label 'Stap 3 van 4: bekijk eerst het wijzigingsvoorstel. Zet het netto meer- en minderwerk desgewenst op een bestaande offerte. Kies daarna ''Pas veilig toe'' om de productieorder te wijzigen.';
+        PreparedNextStepTxt: Label 'Stap 3 van 4: bekijk het wijzigingsvoorstel en kies eerst ''Pas veilig toe''. Zet daarna het netto meer- en minderwerk op een bestaande offerte. Wilt u toch eerst offreren, dan waarschuwt de app voor de juiste volgorde.';
         PreparedNoChangesNextStepTxt: Label 'Deze PIL is al volledig in de productieorder verwerkt of bevat alleen bewust genegeerde regels. Kies ''Pas veilig toe'' om het dossier zonder dubbele wijzigingen als compleet vast te leggen.';
-        QuoteHandoffReversedMsg: Label 'De offerteoverdracht is teruggedraaid. Alleen de nog ongewijzigde regels die door deze PIL zijn toegevoegd, zijn verwijderd. U kunt nu de juiste offerte kiezen.';
+        QuoteHandoffReversedMsg: Label 'De offerteoverdracht is teruggedraaid. Alleen de nog ongewijzigde artikel- en gekoppelde tekstregels die door deze PIL zijn toegevoegd, zijn verwijderd. U kunt nu de juiste offerte kiezen.';
         ReprepareQst: Label 'De analyse wordt opnieuw opgebouwd op basis van de huidige productieorder. Bestaande handmatige verdelingen worden vervangen. Doorgaan?';
         ReverseQuoteHeadingTxt: Label 'Offerteoverdracht terugdraaien';
-        ReverseQuoteInstructionsTxt: Label 'Deze actie verwijdert uitsluitend de nog ongewijzigde offertregels die deze PIL zelf heeft toegevoegd. Geef een duidelijke reden op; deze wordt in het auditdossier bewaard.';
+        ReverseQuoteInstructionsTxt: Label 'Deze actie verwijdert uitsluitend de nog ongewijzigde artikel- en gekoppelde tekstregels die deze PIL zelf heeft toegevoegd. Geef een duidelijke reden op; deze wordt in het auditdossier bewaard.';
         UnmappedNextStepTxt: Label 'Stap 2 van 4: selecteer in ''Geïmporteerde AutoCAD-PIL'' eerst iedere regel met beslissing ''Niet gebruikt''. Kies ''Als los component toevoegen'', ''Onder puntartikel toevoegen'', maak zo nodig een PIL-koppeling, of negeer alleen een artikel dat echt niet bij deze order hoort. Kies daarna ''Controleer verdeling''.';
 }

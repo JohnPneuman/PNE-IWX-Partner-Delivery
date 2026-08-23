@@ -26,7 +26,7 @@ Blue Ace price-group maintenance, or Business Central extended-text setup.
 |---|---|---:|---|
 | PNE Product Configurator Enhancements | `b4514682-8029-4a3d-ad9d-e887cdf51b0f` | `1.0.0.8` | IWX Product Configurator 4.1.9649.1; Bluace Pneuman 1.0.202606.5 |
 | PNE Frame Specification | `f84b335b-771e-429f-a30b-4161c3f670a1` | `1.0.0.8` | IWX Product Configurator 4.1.9649.1 |
-| PNE Production Order Reconciliation | `3dc4b8fc-77a4-4e2e-9ff2-59f99d444c68` | `2.7.0.9` | none |
+| PNE Production Order Reconciliation | `3dc4b8fc-77a4-4e2e-9ff2-59f99d444c68` | `2.7.0.10` | none |
 
 All three apps target Business Central application 28.0 and runtime 17.0. The
 IWX app ID is `f558b611-3753-4d0b-98ca-6b658a4ed24a`; the Bluace app ID is
@@ -204,10 +204,19 @@ an arbitrary Sales Line/configuration. Correct the source link before retrying.
 Open **PIL-inrichting** and maintain only the required PIL groups, CALC
 placeholder and real Item mappings. Daily users import from the production
 order, follow the four numbered steps, resolve only visible exceptions, review
-the proposal and then choose **Veilig doorvoeren**. Quote handoff is optional and
+the proposal and then choose **Veilig doorvoeren**. Quote handoff is optional,
+normally follows safe Apply, and
 uses the existing authorised Sales Quote. The reconciliation app changes only
 the selected live production order and its audit; it has no IWX dependency and
 does not write Production BOM master data.
+
+For automatic net more-/lesswork article text, enable **Automatic Ext. Texts**
+on the Item and maintain a standard Extended Text Header valid for **Sales
+Quote**, the quote language and document date. The app has indirect read access
+only to Item and Extended Text master data; users still need the organisation's
+normal Sales Quote permissions. A handoff attempted before Apply shows a warning
+because editing its new Item line or price, deleting the quote, or converting it
+first removes or changes the snapshot that Apply must verify.
 
 Location/variant-specific Stockkeeping Units are part of acceptance: when an
 SKU specifies another Production BOM, lookup, structural analysis and routing-

@@ -1,6 +1,6 @@
 # PNE Production Order Reconciliation 2.7 — Sandbox-testplan
 
-Dit is het handmatige acceptatieplan voor versie **2.7.0.9**. Leg per run vast:
+Dit is het handmatige acceptatieplan voor versie **2.7.0.10**. Leg per run vast:
 Sandbox-URL en company, BC-versie, appversie, uitvoerder, datum,
 productieorder, bronbestand, verwachte uitkomst en werkelijke uitkomst.
 
@@ -622,35 +622,83 @@ artikel + variant + eenheid samenvoegen.
 
 Maak een bestaande Sales Quote met status Open, Quote Accepted = nee en een
 niet-verlopen Quote Valid Until Date. Voeg vooraf gewone en configuratorregels
-toe.
+toe. Richt voor ten minste één meerwerkartikel en één minderwerkartikel een
+standaard artikeltekst in die voor **Sales Quote** geldt. Gebruik een lange
+tekst die over meer dan één verkoopregel moet worden verdeeld en, waar
+mogelijk, een taal- of datumafhankelijke tweede versie. Zet op deze artikelen
+**Automatic Ext. Texts** aan. Richt daarnaast één artikel met geldige Sales
+Quote-tekst maar **Automatic Ext. Texts** uit in.
 
-1. Kies **Meer- en minderwerk naar bestaande offerte**.
-2. Controleer dat de bevestiging aantallen **samengevoegde** meerwerk- en
+1. Kies vanuit *Gereed om toe te passen* **Meer- en minderwerk naar bestaande
+   offerte**. De app moet eerst aanraden **Pas veilig toe** uit te voeren en
+   waarschuwen dat verwijderen of omzetten van de offerte vóór Apply de
+   controle blokkeert. Kies **Nee**; er mag niets zijn toegevoegd.
+2. Kies **Pas veilig toe** en start daarna de offerteoverdracht opnieuw. De
+   workflowwaarschuwing verschijnt nu niet.
+3. Controleer dat de bevestiging aantallen **samengevoegde** meerwerk- en
    minderwerkregels toont, niet het aantal onderliggende technische regels.
-3. Controleer groep A, B en C tegen bovenstaande tabel. De offertehoeveelheid is
+4. Controleer groep A, B en C tegen bovenstaande tabel. De offertehoeveelheid is
    altijd `som definitief - som oorspronkelijk`, nooit het volledige definitieve
    aantal en nooit iedere technische wijziging apart.
-4. Controleer dat de positieve en negatieve nettoresultaten als nieuwe gewone
+5. Controleer dat de positieve en negatieve nettoresultaten als nieuwe gewone
    Item-regels worden toegevoegd met juist item, variant, UOM en teken van de
    hoeveelheid. Netto nul maakt geen regel.
-5. Controleer dat alle technische change lines die aan dezelfde nettoregel
+6. Controleer direct onder iedere aangemaakte Item-regel de standaard
+   artikeltekst. Meerwerk begint bijvoorbeeld met `1x`; minderwerk begint met
+   **Minderwerk** en het absolute aantal. De tekstregels hebben **Attached to
+   Line No.** van de juiste Item-regel, gebruiken de offerte-documentdatum en
+   taal en zijn zonder stil afkappen over meerdere regels verdeeld. Een lege
+   brontekstregel blijft als lege alinea behouden. Een artikel zonder
+   toepasselijke automatische artikeltekst maakt wel gewoon zijn Item-regel;
+   het artikel met **Automatic Ext. Texts** uit krijgt bewust geen tekst.
+7. Controleer dat alle technische change lines die aan dezelfde nettoregel
    bijdragen dezelfde offerte, hetzelfde regelnummer, dezelfde SystemId en
    dezelfde SystemModifiedAt bewaren.
-6. Controleer dat bestaande gewone en configuratorregels ongewijzigd zijn.
-7. Controleer dat Unit Price en Line Amount uit de standaard BC-prijsberekening
+8. Controleer dat bestaande gewone en configuratorregels ongewijzigd zijn. De
+   PIL-overdracht mag geen IWX-configuratie openen, geen volledige
+   configuratietekst genereren en geen Assemble-to-Order-nevenactie starten.
+9. Controleer dat Unit Price en Line Amount uit de standaard BC-prijsberekening
    komen, niet uit IWX. Beoordeel bij minderwerk expliciet het negatieve aantal,
    de prijs, korting, btw en het uiteindelijke negatieve bedrag.
-8. Controleer in change lines en rapport offerte-, regel-, prijs-, bedrag-,
+10. Controleer in change lines en rapport offerte-, regel-, prijs-, bedrag-,
    valuta-, gebruiker- en tijdstempelaudit. Een netto-nulgroep meldt dat de
    technische regels commercieel tegen elkaar wegvallen.
-9. Probeer na overdracht de verdeling of analyse te wijzigen: dit moet blokkeren
-   zolang de overdracht actief is.
-10. Wijzig of verwijder een gedeelde gekoppelde offertregel: de rapportage toont
-    commerciële review en Apply/een tweede overdracht mag niets automatisch
-    herstellen of dupliceren.
-11. Verwijder bij wijze van dataintegriteitstest de actieve koppeling op slechts
-    één bijdragende bronregel. Apply moet blokkeren; alle bronregels van een
+11. Probeer na overdracht de verdeling of analyse te wijzigen: dit moet blokkeren
+    zolang de overdracht actief is.
+12. Wijzig of verwijder de gedeelde gekoppelde Item-regel of één van zijn
+    gekoppelde tekstregels. Voeg ook een onverwachte extra gekoppelde tekstregel
+    toe. De rapportage toont in alle gevallen commerciële review en een tweede
+    overdracht mag niets automatisch herstellen of dupliceren. Automatisch
+    terugdraaien moet blokkeren zodra artikel of tekst afwijkt.
+13. Wijzig na overdracht de onderliggende standaard artikeltekst of de
+    documentdatum/taal zodat een andere tekst geldig wordt. De bestaande
+    overdracht moet beoordelingsplichtig worden; de app mag de offertetekst niet
+    stil herschrijven.
+14. Maak hiervoor een afzonderlijk *Gereed om toe te passen*-dossier, bevestig
+    bewust de waarschuwing en draag vóór Apply over. Wijzig daarna uitsluitend
+    een gekoppelde tekstregel of de Extended Text-stam. Technische Apply moet
+    doorgaan zolang de gekoppelde Item-regel en technische snapshot exact
+    gelijk zijn; automatisch terugdraaien blijft geblokkeerd. Verwijder op een
+    nieuwe fixture de actieve koppeling van slechts één bijdragende bronregel:
+    Apply moet dan wél blokkeren; alle bronregels van een
     niet-nul nettogroep moeten naar dezelfde actuele offertregel blijven wijzen.
+15. Maak van de offerte via de normale Sandbox-verkoopstroom een order en
+    factuur. Controleer dat de gekoppelde tekstregels meegaan en dat de gekozen
+    offerte-/order-/factuurlay-outs ze zichtbaar afdrukken. Dit is een
+    layoutacceptatietest; de PIL-app past geen rapportlay-out aan.
+16. Maak nog een *Gereed om toe te passen*-dossier, draag vóór Apply over en zet
+    de offerte daarna bewust om naar een order. Apply moet veilig blokkeren omdat
+    de gekoppelde offerte-itemregel niet meer bestaat. Dit bevestigt waarom de
+    gebruikersmelding standaard Apply vóór offerteoverdracht adviseert.
+17. Herhaal handoff en terugdraaien met een gebruiker die wel normale
+    offerterechten heeft maar geen afzonderlijke Extended Text-leesrol. De
+    codeunit moet de benodigde Item/Extended Text-stamdata indirect kunnen lezen;
+    er mag geen ruwe tabel-permissionfout ontstaan.
+18. Maak nog een *Gereed om toe te passen*-dossier, bevestig bewust overdracht
+    vóór Apply en wijzig alleen de verkoopprijs van de aangemaakte Item-regel.
+    Apply en automatisch terugdraaien moeten blokkeren en de app mag de prijs
+    niet herstellen. Herhaal de aanbevolen volgorde: eerst Apply, daarna
+    overdracht en prijscontrole; dan is commerciële prijsaanpassing veilig.
 
 Negatieve keuzes en afwijzingen:
 
@@ -673,8 +721,10 @@ offerteoverdracht:
    reden. Dit moet blokkeren.
 2. Geef een duidelijke reden op en bevestig.
 3. Controleer dat uitsluitend de door dit dossier gemaakte, nog ongewijzigde
-   offertregel(s) zijn verwijderd. Een gedeelde offertregel wordt precies één
-   keer verwijderd, ook wanneer meerdere technische change lines ernaar wijzen.
+   offertregel(s) en hun gekoppelde tekstregels zijn verwijderd. Een gedeelde
+   offertregel wordt precies één keer verwijderd, ook wanneer meerdere
+   technische change lines ernaar wijzen. Onverwante bestaande tekstregels
+   blijven staan.
 4. Controleer dat elke bijdragende change line **Quote Reversed** is en verwijst
    naar een
    onveranderbare **PNE PIL Quote Reversal** (50198) met oude offertedata,

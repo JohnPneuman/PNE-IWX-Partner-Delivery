@@ -180,18 +180,36 @@ Business Rules and does not call or mutate Bluace Item Routing master data.
 
 The proposal table is an app-owned technical/commercial audit snapshot, not a
 sales-document editor. A user may select only an existing Open, unaccepted and
-non-expired Sales Quote; the quote codeunit appends one new standard Item line
-per positive delta and never changes an existing quote or configurator line.
-Standard Sales Line validation calculates the price. Negative/zero deltas stay
-manual, and no IWX formula is called. The user must separately have normal
+non-expired Sales Quote. The quote codeunit groups technical carrier changes
+by Item, Variant and UOM and appends one standard Item line for each non-zero
+original-to-final net delta; a negative quantity is lesswork and net zero
+creates no Sales Line. It never changes an existing quote or configurator
+line. Standard Sales Line validation calculates the price.
+
+After inserting a net Item line, the same codeunit reads only standard
+Business Central Extended Text when the Item has Automatic Ext. Texts enabled
+and the text is enabled for Sales Quote and valid for
+the quote document date and language. It creates attached blank Sales Lines,
+prefixes each non-empty source text line with the net quantity or `Minderwerk`,
+and word-wraps
+without truncation. These attached lines are part of commercial report and
+standard-reversal integrity. Technical Apply verifies the immutable Item-line
+snapshot but deliberately does not depend on later mutable text master data.
+The code does not invoke the IWX configured-text builder,
+does not open a configuration and does not call an IWX formula or Business
+Rule. The user must separately have normal
 Business Central Sales Quote/Sales Line read-and-create rights: **PNE PIL
 Reconcile** intentionally grants no Sales Header, Sales Line or sales-page
-rights. Before handoff, a manual **Naar deze carrier** change from *Gereed om
+rights. Codeunit 50197 has indirect read permission only for Item and Extended
+Text master data; it does not grant Sales Header/Line access. Before handoff, a manual **Naar deze carrier** change from *Gereed om
 toe te passen* immediately returns the dossier to *Verdeling nodig*; **Stap 2
 - Controleer verdeling** must rebuild the proposal first. Once a proposal has a quote
-link, the technical allocation/reprepare path is locked. The report detects a
-changed or deleted linked quote line live and asks for commercial review
-instead of repairing it. If the user can no longer read the linked Sales Line,
+link, the technical allocation/reprepare path is locked. Apply-first and
+handoff-second is the recommended workflow; pre-Apply handoff requires an
+explicit warning confirmation. The report detects a
+changed or deleted linked quote Item or attached text line live and asks for
+commercial review instead of repairing it. If the user can no longer read the
+linked Sales Line,
 the technical report remains usable and reports that the quote link cannot be
 verified with the current permissions; it is also commercial review, not a
 report failure or a repair attempt.

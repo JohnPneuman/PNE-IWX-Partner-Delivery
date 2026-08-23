@@ -1,10 +1,15 @@
 namespace Pneuman.ProductionOrderReconciliation;
 
+using Microsoft.Foundation.ExtendedText;
+using Microsoft.Inventory.Item;
 using Microsoft.Sales.Document;
 
 codeunit 50197 "PNE PIL Sales Quote Mgt."
 {
-    Permissions = tabledata "PNE PIL Change Line" = rimd,
+    Permissions = tabledata "Extended Text Header" = r,
+                  tabledata "Extended Text Line" = r,
+                  tabledata Item = r,
+                  tabledata "PNE PIL Change Line" = rimd,
                   tabledata "PNE PIL Quote Reversal" = rimd;
 
     procedure AddNetChangesToSelectedSalesQuote(var PNEPILHeader: Record "PNE PIL Header"; var SalesQuoteNo: Code[20]): Boolean
@@ -19,6 +24,10 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         CheckHeaderIsReadyForSalesQuote(PNEPILHeader);
         EnsureFreshTechnicalProposalForQuote(PNEPILHeader);
         CheckNoExistingSalesQuoteLinks(PNEPILHeader);
+        if (PNEPILHeader.Status = PNEPILHeader.Status::Prepared) and
+           not Confirm(PreparedQuoteHandoffQst, false)
+        then
+            exit(false);
         GetNetChangeSummary(
             PNEPILHeader,
             MoreworkLineCount,
@@ -113,19 +122,83 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     procedure EnsureActiveQuoteLinksCurrent(PNEPILHeader: Record "PNE PIL Header")
     var
         PNEPILChangeLine: Record "PNE PIL Change Line";
+        ProcessedQuoteLines: Dictionary of [Text, Boolean];
+        QuoteLineKey: Text;
+        QuoteItemLineIsCurrent: Boolean;
         QuoteLineIsCurrent: Boolean;
     begin
         SetActiveQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
         if PNEPILChangeLine.FindSet() then
             repeat
-                if not TryIsActiveQuoteLinkCurrent(PNEPILChangeLine, QuoteLineIsCurrent) then
-                    Error(QuoteLinkCannotBeVerifiedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
-                if not QuoteLineIsCurrent then
-                    Error(QuotedLineChangedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                QuoteLineKey := GetQuoteLineKey(PNEPILChangeLine);
+                if not ProcessedQuoteLines.ContainsKey(QuoteLineKey) then begin
+                    if not TryGetActiveQuoteLinkStatus(PNEPILChangeLine, QuoteItemLineIsCurrent, QuoteLineIsCurrent) then
+                        Error(QuoteLinkCannotBeVerifiedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    if not QuoteItemLineIsCurrent then
+                        Error(QuotedLineChangedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    if not QuoteLineIsCurrent then
+                        Error(QuotedTextChangedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    ProcessedQuoteLines.Add(QuoteLineKey, true);
+                end;
+            until PNEPILChangeLine.Next() = 0;
+    end;
+
+    procedure EnsureActiveQuoteItemLinksCurrent(PNEPILHeader: Record "PNE PIL Header")
+    var
+        PNEPILChangeLine: Record "PNE PIL Change Line";
+        ProcessedQuoteLines: Dictionary of [Text, Boolean];
+        QuoteLineKey: Text;
+        QuoteLineIsCurrent: Boolean;
+    begin
+        SetActiveQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
+        if PNEPILChangeLine.FindSet() then
+            repeat
+                QuoteLineKey := GetQuoteLineKey(PNEPILChangeLine);
+                if not ProcessedQuoteLines.ContainsKey(QuoteLineKey) then begin
+                    if not TryIsActiveQuoteItemLinkCurrent(PNEPILChangeLine, QuoteLineIsCurrent) then
+                        Error(QuoteLinkCannotBeVerifiedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    if not QuoteLineIsCurrent then
+                        Error(QuotedLineChangedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    ProcessedQuoteLines.Add(QuoteLineKey, true);
+                end;
             until PNEPILChangeLine.Next() = 0;
     end;
 
     procedure IsActiveQuoteLinkCurrent(PNEPILChangeLine: Record "PNE PIL Change Line"): Boolean
+    var
+        QuoteItemLineIsCurrent: Boolean;
+        QuoteTextIsCurrent: Boolean;
+    begin
+        GetActiveQuoteLinkStatus(PNEPILChangeLine, QuoteItemLineIsCurrent, QuoteTextIsCurrent);
+        exit(QuoteItemLineIsCurrent and QuoteTextIsCurrent);
+    end;
+
+    local procedure GetActiveQuoteLinkStatus(PNEPILChangeLine: Record "PNE PIL Change Line"; var QuoteItemLineIsCurrent: Boolean; var QuoteTextIsCurrent: Boolean)
+    var
+        SalesHeader: Record "Sales Header";
+        SalesLine: Record "Sales Line";
+    begin
+        Clear(QuoteItemLineIsCurrent);
+        Clear(QuoteTextIsCurrent);
+        if PNEPILChangeLine."Quote Reversed" or
+           (PNEPILChangeLine."Sales Quote No." = '') or
+           (PNEPILChangeLine."Sales Quote Line No." = 0)
+        then
+            exit;
+        if not SalesHeader.Get(SalesHeader."Document Type"::Quote, PNEPILChangeLine."Sales Quote No.") then
+            exit;
+        if not SalesLine.Get(
+            SalesLine."Document Type"::Quote,
+            PNEPILChangeLine."Sales Quote No.",
+            PNEPILChangeLine."Sales Quote Line No.")
+        then
+            exit;
+        QuoteItemLineIsCurrent := IsMatchingSalesQuoteItemLine(PNEPILChangeLine, SalesHeader, SalesLine);
+        if QuoteItemLineIsCurrent then
+            QuoteTextIsCurrent := HasExpectedSalesQuoteExtendedText(SalesHeader, SalesLine);
+    end;
+
+    local procedure IsActiveQuoteItemLinkCurrent(PNEPILChangeLine: Record "PNE PIL Change Line"): Boolean
     var
         SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
@@ -143,7 +216,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
             PNEPILChangeLine."Sales Quote Line No.")
         then
             exit(false);
-        exit(IsMatchingSalesQuoteLine(PNEPILChangeLine, SalesHeader, SalesLine));
+        exit(IsMatchingSalesQuoteItemLine(PNEPILChangeLine, SalesHeader, SalesLine));
     end;
 
     procedure OpenSalesQuote(SalesQuoteNo: Code[20])
@@ -205,6 +278,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     local procedure AddNetSalesQuoteItemLine(SalesHeader: Record "Sales Header"; TempPNEPILChangeLine: Record "PNE PIL Change Line" temporary)
     var
         NewSalesLine: Record "Sales Line";
+        TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary;
     begin
         NewSalesLine.Init();
         NewSalesLine."Document Type" := SalesHeader."Document Type";
@@ -219,6 +293,9 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
             NewSalesLine.Validate("Unit of Measure Code", TempPNEPILChangeLine."Unit of Measure Code");
         NewSalesLine.Validate(Quantity, TempPNEPILChangeLine."Quantity Difference");
         NewSalesLine.Insert(true);
+        InsertQuantitySalesQuoteExtendedText(SalesHeader, NewSalesLine, TempExpectedExtendedTextSalesLine);
+        if not SalesQuoteExtendedTextMatchesExpected(NewSalesLine, TempExpectedExtendedTextSalesLine) then
+            Error(QuoteExtendedTextInsertErr, NewSalesLine."No.");
 
         LinkCommercialSourceLines(
             TempPNEPILChangeLine,
@@ -263,6 +340,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         SalesHeader: Record "Sales Header";
         SalesLine: Record "Sales Line";
         ProcessedSalesQuoteLineNos: Dictionary of [Integer, Boolean];
+        QuoteLineIsCurrent: Boolean;
     begin
         PNEPILHeader.LockTable();
         PNEPILChangeLine.LockTable();
@@ -288,8 +366,12 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
                         PNEPILChangeLine."Sales Quote Line No.")
                     then
                         Error(QuotedLineMissingErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
-                    if not IsMatchingSalesQuoteLine(PNEPILChangeLine, SalesHeader, SalesLine) then
+                    if not IsMatchingSalesQuoteItemLine(PNEPILChangeLine, SalesHeader, SalesLine) then
                         Error(QuotedLineChangedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    if not TryHasExpectedSalesQuoteExtendedText(SalesHeader, SalesLine, QuoteLineIsCurrent) then
+                        Error(QuoteLinkCannotBeVerifiedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
+                    if not QuoteLineIsCurrent then
+                        Error(QuotedTextChangedErr, PNEPILChangeLine."Sales Quote No.", PNEPILChangeLine."Sales Quote Line No.");
                     SalesLine.Delete(true);
                     ProcessedSalesQuoteLineNos.Add(PNEPILChangeLine."Sales Quote Line No.", true);
                 end;
@@ -352,7 +434,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     begin
         SetActiveQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
         if not PNEPILChangeLine.IsEmpty() then begin
-            EnsureActiveQuoteLinksCurrent(PNEPILHeader);
+            EnsureActiveQuoteItemLinksCurrent(PNEPILHeader);
             Error(AlreadyAddedToQuoteErr, PNEPILHeader."Entry No.");
         end;
     end;
@@ -405,6 +487,173 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         if SalesLine.FindLast() then
             exit(SalesLine."Line No." + 10000);
         exit(10000);
+    end;
+
+    local procedure InsertQuantitySalesQuoteExtendedText(SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"; var TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary)
+    var
+        NewExtendedTextSalesLine: Record "Sales Line";
+    begin
+        BuildExpectedSalesQuoteExtendedText(SalesHeader, SalesLine, TempExpectedExtendedTextSalesLine);
+        if TempExpectedExtendedTextSalesLine.FindSet() then
+            repeat
+                NewExtendedTextSalesLine := TempExpectedExtendedTextSalesLine;
+                NewExtendedTextSalesLine.Insert();
+            until TempExpectedExtendedTextSalesLine.Next() = 0;
+    end;
+
+    local procedure HasExpectedSalesQuoteExtendedText(SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"): Boolean
+    var
+        TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary;
+    begin
+        BuildExpectedSalesQuoteExtendedText(SalesHeader, SalesLine, TempExpectedExtendedTextSalesLine);
+        exit(SalesQuoteExtendedTextMatchesExpected(SalesLine, TempExpectedExtendedTextSalesLine));
+    end;
+
+    local procedure SalesQuoteExtendedTextMatchesExpected(SalesLine: Record "Sales Line"; var TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary): Boolean
+    var
+        ActualExtendedTextSalesLine: Record "Sales Line";
+        ActualLineFound: Boolean;
+        ExpectedLineFound: Boolean;
+    begin
+        ActualExtendedTextSalesLine.SetRange("Document Type", SalesLine."Document Type");
+        ActualExtendedTextSalesLine.SetRange("Document No.", SalesLine."Document No.");
+        ActualExtendedTextSalesLine.SetRange("Attached to Line No.", SalesLine."Line No.");
+        ActualLineFound := ActualExtendedTextSalesLine.FindSet();
+        ExpectedLineFound := TempExpectedExtendedTextSalesLine.FindSet();
+        while ActualLineFound and ExpectedLineFound do begin
+            if (ActualExtendedTextSalesLine."Line No." <> TempExpectedExtendedTextSalesLine."Line No.") or
+               (ActualExtendedTextSalesLine.Type <> SalesLine.Type::" ") or
+               (ActualExtendedTextSalesLine."No." <> '') or
+               (ActualExtendedTextSalesLine.Quantity <> 0) or
+               (ActualExtendedTextSalesLine.Description <> TempExpectedExtendedTextSalesLine.Description)
+            then
+                exit(false);
+            ActualLineFound := ActualExtendedTextSalesLine.Next() <> 0;
+            ExpectedLineFound := TempExpectedExtendedTextSalesLine.Next() <> 0;
+        end;
+        exit(not ActualLineFound and not ExpectedLineFound);
+    end;
+
+    local procedure BuildExpectedSalesQuoteExtendedText(SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"; var TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary)
+    var
+        ExtendedTextHeader: Record "Extended Text Header";
+        Item: Record Item;
+        TempExtendedTextLine: Record "Extended Text Line" temporary;
+        TransferExtendedText: Codeunit "Transfer Extended Text";
+        NextLineNo: Integer;
+    begin
+        TempExpectedExtendedTextSalesLine.Reset();
+        TempExpectedExtendedTextSalesLine.DeleteAll();
+        if (SalesLine.Type <> SalesLine.Type::Item) or (SalesLine."No." = '') then
+            exit;
+        if not Item.Get(SalesLine."No.") or not Item."Automatic Ext. Texts" then
+            exit;
+
+        ExtendedTextHeader.SetRange("Table Name", ExtendedTextHeader."Table Name"::Item);
+        ExtendedTextHeader.SetRange("No.", SalesLine."No.");
+        ExtendedTextHeader.SetRange("Sales Quote", true);
+        if not TransferExtendedText.ReadExtTextLines(
+            ExtendedTextHeader,
+            SalesHeader."Document Date",
+            SalesHeader."Language Code")
+        then
+            exit;
+
+        TransferExtendedText.GetTempExtTextLine(TempExtendedTextLine);
+        NextLineNo := SalesLine."Line No." + ExtendedTextLineSpacing();
+        if TempExtendedTextLine.FindSet() then
+            repeat
+                if TempExtendedTextLine.Text = '' then
+                    AppendBlankSalesTextLine(TempExpectedExtendedTextSalesLine, SalesLine, NextLineNo)
+                else
+                    AppendQuantitySalesTextLines(
+                        TempExpectedExtendedTextSalesLine,
+                        SalesLine,
+                        TempExtendedTextLine.Text,
+                        NextLineNo);
+            until TempExtendedTextLine.Next() = 0;
+    end;
+
+    local procedure AppendBlankSalesTextLine(var TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary; SalesLine: Record "Sales Line"; var NextLineNo: Integer)
+    begin
+        TempExpectedExtendedTextSalesLine.Init();
+        TempExpectedExtendedTextSalesLine."Document Type" := SalesLine."Document Type";
+        TempExpectedExtendedTextSalesLine."Document No." := SalesLine."Document No.";
+        TempExpectedExtendedTextSalesLine."Line No." := NextLineNo;
+        TempExpectedExtendedTextSalesLine.Description := '';
+        TempExpectedExtendedTextSalesLine."Attached to Line No." := SalesLine."Line No.";
+        TempExpectedExtendedTextSalesLine.Insert();
+        NextLineNo += ExtendedTextLineSpacing();
+    end;
+
+    local procedure AppendQuantitySalesTextLines(var TempExpectedExtendedTextSalesLine: Record "Sales Line" temporary; SalesLine: Record "Sales Line"; ExtendedText: Text; var NextLineNo: Integer)
+    var
+        OutputText: Text;
+        QuantityPrefix: Text;
+        TextPart: Text;
+        AvailableTextLength: Integer;
+    begin
+        OutputText := ExtendedText;
+        QuantityPrefix := GetSalesTextQuantityPrefix(SalesLine.Quantity);
+        AvailableTextLength := MaxStrLen(TempExpectedExtendedTextSalesLine.Description) - StrLen(QuantityPrefix);
+        if AvailableTextLength < 1 then
+            AvailableTextLength := 1;
+        while OutputText <> '' do begin
+            TextPart := GetWordWrappedTextPart(OutputText, AvailableTextLength);
+            OutputText := RemoveWrappedTextPart(OutputText, TextPart);
+
+            TempExpectedExtendedTextSalesLine.Init();
+            TempExpectedExtendedTextSalesLine."Document Type" := SalesLine."Document Type";
+            TempExpectedExtendedTextSalesLine."Document No." := SalesLine."Document No.";
+            TempExpectedExtendedTextSalesLine."Line No." := NextLineNo;
+            TempExpectedExtendedTextSalesLine.Description := CopyStr(
+                QuantityPrefix + TextPart,
+                1,
+                MaxStrLen(TempExpectedExtendedTextSalesLine.Description));
+            TempExpectedExtendedTextSalesLine."Attached to Line No." := SalesLine."Line No.";
+            TempExpectedExtendedTextSalesLine.Insert();
+
+            NextLineNo += ExtendedTextLineSpacing();
+            Clear(QuantityPrefix);
+            AvailableTextLength := MaxStrLen(TempExpectedExtendedTextSalesLine.Description);
+        end;
+    end;
+
+    local procedure GetSalesTextQuantityPrefix(Quantity: Decimal): Text
+    begin
+        if Quantity < 0 then
+            exit(StrSubstNo(LessworkQuantityPrefixLbl, Format(Abs(Quantity), 0, 9)));
+        exit(StrSubstNo(QuantityPrefixLbl, Format(Quantity, 0, 9)));
+    end;
+
+    local procedure GetWordWrappedTextPart(OutputText: Text; AvailableTextLength: Integer): Text
+    var
+        BreakPosition: Integer;
+    begin
+        if StrLen(OutputText) <= AvailableTextLength then
+            exit(OutputText);
+
+        BreakPosition := AvailableTextLength;
+        while (BreakPosition > 1) and (CopyStr(OutputText, BreakPosition, 1) <> ' ') do
+            BreakPosition -= 1;
+        if BreakPosition = 1 then
+            exit(CopyStr(OutputText, 1, AvailableTextLength));
+        exit(CopyStr(OutputText, 1, BreakPosition - 1));
+    end;
+
+    local procedure RemoveWrappedTextPart(OutputText: Text; TextPart: Text): Text
+    var
+        NextPosition: Integer;
+    begin
+        NextPosition := StrLen(TextPart) + 1;
+        while (NextPosition <= StrLen(OutputText)) and (CopyStr(OutputText, NextPosition, 1) = ' ') do
+            NextPosition += 1;
+        exit(CopyStr(OutputText, NextPosition));
+    end;
+
+    local procedure ExtendedTextLineSpacing(): Integer
+    begin
+        exit(10);
     end;
 
     local procedure GetNetChangeSummary(PNEPILHeader: Record "PNE PIL Header"; var MoreworkLineCount: Integer; var LessworkLineCount: Integer; var TotalMoreworkQuantity: Decimal; var TotalLessworkQuantity: Decimal; var TotalEstimatedCostDifference: Decimal)
@@ -494,7 +743,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         exit(not PNEPILTarget.IsEmpty());
     end;
 
-    local procedure IsMatchingSalesQuoteLine(PNEPILChangeLine: Record "PNE PIL Change Line"; SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"): Boolean
+    local procedure IsMatchingSalesQuoteItemLine(PNEPILChangeLine: Record "PNE PIL Change Line"; SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"): Boolean
     var
         ExpectedQuoteQuantity: Decimal;
     begin
@@ -539,10 +788,27 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         PNEPILChangeLine.SetFilter("Sales Quote No.", '<>%1', '');
     end;
 
-    [TryFunction]
-    local procedure TryIsActiveQuoteLinkCurrent(PNEPILChangeLine: Record "PNE PIL Change Line"; var QuoteLineIsCurrent: Boolean)
+    local procedure GetQuoteLineKey(PNEPILChangeLine: Record "PNE PIL Change Line"): Text
     begin
-        QuoteLineIsCurrent := IsActiveQuoteLinkCurrent(PNEPILChangeLine);
+        exit(PNEPILChangeLine."Sales Quote No." + '|' + Format(PNEPILChangeLine."Sales Quote Line No."));
+    end;
+
+    [TryFunction]
+    local procedure TryGetActiveQuoteLinkStatus(PNEPILChangeLine: Record "PNE PIL Change Line"; var QuoteItemLineIsCurrent: Boolean; var QuoteTextIsCurrent: Boolean)
+    begin
+        GetActiveQuoteLinkStatus(PNEPILChangeLine, QuoteItemLineIsCurrent, QuoteTextIsCurrent);
+    end;
+
+    [TryFunction]
+    local procedure TryIsActiveQuoteItemLinkCurrent(PNEPILChangeLine: Record "PNE PIL Change Line"; var QuoteLineIsCurrent: Boolean)
+    begin
+        QuoteLineIsCurrent := IsActiveQuoteItemLinkCurrent(PNEPILChangeLine);
+    end;
+
+    [TryFunction]
+    local procedure TryHasExpectedSalesQuoteExtendedText(SalesHeader: Record "Sales Header"; SalesLine: Record "Sales Line"; var QuoteTextIsCurrent: Boolean)
+    begin
+        QuoteTextIsCurrent := HasExpectedSalesQuoteExtendedText(SalesHeader, SalesLine);
     end;
 
     [TryFunction]
@@ -560,18 +826,23 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     end;
 
     var
-        AddNetToQuoteQst: Label 'Voeg het netto verschil toe aan offerte %1?\Meerwerk: %2 samengevoegde regel(s), totaal +%3.\Minderwerk: %4 samengevoegde regel(s), totaal -%5.\De netto technische kostenindicatie is %6. De app groepeert op artikel, variant en eenheid, maakt alleen nieuwe gewone artikelregels en wijzigt geen bestaande offerte- of configuratorregel. Controleer daarna de verkoopprijzen.', Comment = '%1 = sales quote number, %2 = morework line count, %3 = total morework quantity, %4 = lesswork line count, %5 = total lesswork quantity, %6 = net technical cost indication';
+        AddNetToQuoteQst: Label 'Voeg het netto verschil toe aan offerte %1?\Meerwerk: %2 samengevoegde regel(s), totaal +%3.\Minderwerk: %4 samengevoegde regel(s), totaal -%5.\De netto technische kostenindicatie is %6. De app groepeert op artikel, variant en eenheid, maakt alleen nieuwe gewone artikelregels en wijzigt geen bestaande offerte- of configuratorregel. Geldige automatische artikelteksten voor Sales Quote worden met het netto aantal onder de nieuwe regel gezet.', Comment = '%1 = sales quote number, %2 = morework line count, %3 = total morework quantity, %4 = lesswork line count, %5 = total lesswork quantity, %6 = net technical cost indication';
         AlreadyAddedToQuoteErr: Label 'PIL-import %1 heeft al actieve regels op een offerte. Controleer die offerte of draai eerst de overdracht terug; dubbele regels worden niet toegevoegd.', Comment = '%1 = import entry number';
         AppliedProposalCannotReverseErr: Label 'PIL-import %1 is al toegepast op de productieorder. De offerte-overdracht kan niet meer automatisch worden teruggedraaid; beoordeel de offerte handmatig.', Comment = '%1 = import entry number';
         MultipleActiveSalesQuotesErr: Label 'PIL-import %1 heeft actieve koppelingen met meer dan één offerte en kan niet automatisch worden teruggedraaid.', Comment = '%1 = import entry number';
         NoActiveQuoteHandoffErr: Label 'PIL-import %1 heeft geen actieve offerte-overdracht om terug te draaien.', Comment = '%1 = import entry number';
         NoNetChangesErr: Label 'PIL-import %1 heeft na groepering geen netto carrierwijzigingen om aan een offerte toe te voegen.', Comment = '%1 = import entry number';
         OpenSalesQuoteErr: Label 'Offerte %1 kan met de huidige rechten niet worden geopend. Open de offerte via uw normale offertetoegang.', Comment = '%1 = sales quote number';
+        PreparedQuoteHandoffQst: Label 'Deze PIL is technisch gecontroleerd, maar nog niet op de productieorder toegepast. De veiligste volgorde is eerst ''Pas veilig toe'' en daarna de offerte-overdracht. Tot Apply mag de aangemaakte offertregel niet worden gewijzigd, ook niet de prijs, en de offerte mag niet worden verwijderd of naar een order worden omgezet. Anders kan de koppeling niet meer automatisch worden gecontroleerd. Toch nu naar de offerte overdragen?';
         ProposalNotReadyErr: Label 'PIL-import %1 moet eerst klaar zijn voor toepassen voordat deze aan een offerte kan worden toegevoegd.', Comment = '%1 = import entry number';
         ProposalNotReadyForReversalErr: Label 'PIL-import %1 moet klaar zijn voor toepassen en nog niet zijn toegepast voordat de offerte-overdracht kan worden teruggedraaid.', Comment = '%1 = import entry number';
+        QuantityPrefixLbl: Label '%1x ', Comment = '%1 = positive net item quantity';
+        LessworkQuantityPrefixLbl: Label 'Minderwerk: %1x ', Comment = '%1 = absolute negative net item quantity';
+        QuoteExtendedTextInsertErr: Label 'De artikeltekst van %1 kon niet volledig en controleerbaar aan de offerte worden toegevoegd. Er is niets overgedragen.', Comment = '%1 = item number';
         QuoteExpiredErr: Label 'Offerte %1 is verlopen op %2 en kan niet automatisch PIL-regels ontvangen of terugdraaien.', Comment = '%1 = sales quote number, %2 = valid-until date';
         QuoteLinkCannotBeVerifiedErr: Label 'Offerte %1, regel %2 kan met de huidige rechten niet worden gecontroleerd. Geef de beoordelaar normale leesrechten op offertregels of voer eerst een handmatige commerciële controle uit.', Comment = '%1 = sales quote number, %2 = sales quote line number';
         QuotedLineChangedErr: Label 'Offerte %1, regel %2 wijkt af van het PIL-voorstel. De app verandert of verwijdert deze regel niet automatisch; beoordeel hem handmatig.', Comment = '%1 = sales quote number, %2 = sales quote line number';
+        QuotedTextChangedErr: Label 'De gekoppelde artikeltekst onder offerte %1, regel %2 is gewijzigd of volgt inmiddels een andere tekstinrichting. Technische Apply blijft mogelijk zolang de artikelregel zelf ongewijzigd is. Automatisch terugdraaien is geblokkeerd; beoordeel en corrigeer de offerte handmatig.', Comment = '%1 = sales quote number, %2 = sales quote line number';
         QuotedLineMissingErr: Label 'Offerte %1, regel %2 die aan dit PIL-voorstel is gekoppeld, bestaat niet meer.', Comment = '%1 = sales quote number, %2 = sales quote line number';
         ReversalReasonRequiredErr: Label 'Vul een reden in voordat u de offerte-overdracht terugdraait.';
         ReverseQuoteQst: Label 'Draai %1 door dit PIL-dossier aangemaakte artikelregel(s) op offerte %2 terug? Alleen ongewijzigde regels die deze app zelf heeft toegevoegd, worden verwijderd. De opgegeven reden blijft in de audit bewaard.', Comment = '%1 = active PIL change line count, %2 = sales quote number';

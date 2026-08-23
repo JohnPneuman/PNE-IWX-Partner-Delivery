@@ -1,6 +1,6 @@
 # PNE Production Order Reconciliation
 
-Versie **2.7.0.9** zet een werkelijk AutoCAD-PIL-bestand veilig om naar de
+Versie **2.7.0.10** zet een werkelijk AutoCAD-PIL-bestand veilig om naar de
 technische inhoud van één productieorder. De app is bedoeld wanneer AutoCAD de
 werkelijke artikelen kent, terwijl de productieorder nog een samengesteld
 carrier-artikel of een `CALC-*`-placeholder bevat.
@@ -252,8 +252,11 @@ terug.
 
 ## Netto meer- en minderwerk op een bestaande offerte
 
-Gebruik in stap 3 **Meer- en minderwerk naar bestaande offerte** wanneer het
-voorstel netto carrierwijzigingen bevat.
+Gebruik na **Pas veilig toe** **Meer- en minderwerk naar bestaande offerte**
+wanneer het voorstel netto carrierwijzigingen bevat. Overdracht vóór Apply blijft
+mogelijk na een duidelijke waarschuwing, maar zet of verwijder die offerte dan
+niet voordat de technische wijziging is toegepast. Wijzig vóór Apply ook de
+aangemaakte artikelregel of prijs nog niet; controleer prijzen daarna.
 
 - Je kiest zelf een bestaande, open, niet-geaccepteerde en niet-verlopen
   offerte.
@@ -269,6 +272,18 @@ voorstel netto carrierwijzigingen bevat.
 - De normale Business Central-verkoopprijsberekening bepaalt prijs en bedrag;
   IWX-prijslogica wordt niet aangeroepen. Controleer bij minderwerk bewust de
   negatieve prijs en het bedrag.
+- Geldige standaard artikelteksten waarvoor **Automatic Ext. Texts** en
+  **Sales Quote** zijn ingeschakeld, worden automatisch als gekoppelde
+  tekstregels toegevoegd. Iedere positieve
+  tekstregel begint met het netto aantal; bij een negatieve regel staat er
+  duidelijk **Minderwerk** met het absolute aantal. De offerte gebruikt haar
+  eigen documentdatum en taal.
+- De tekst wordt rechtstreeks uit standaard Business Central Extended Text
+  gelezen. Er wordt geen IWX-configuratie geopend of opnieuw berekend. Een
+  wijziging aan de artikelregel blokkeert technische Apply. Een wijziging aan
+  uitsluitend gekoppelde tekst maakt de commerciële koppeling
+  beoordelingsplichtig en blokkeert veilig automatisch terugdraaien, maar houdt
+  de technische productieorderwijziging niet tegen.
 - Het dossier bewaart offerte-, regel-, prijs-, bedrag-, gebruiker- en
   tijdstempelaudit. Het afdrukbare **PIL-wijzigingsvoorstel** laat zowel de
   technische als commerciële status zien.
@@ -538,6 +553,16 @@ Alleen het netto verschil gaat naar de bestaande offerte: positief als
 meerwerk, negatief als minderwerk en nul als geen offerteregel. Een gedeelde
 offertregel wordt bij controle en terugdraaien eenmaal behandeld, terwijl de
 audit op iedere technische bronregel behouden blijft.
+
+Versie 2.7.0.10 voegt bij iedere netto meer-/minderwerkregel automatisch de
+geldige standaard artikeltekst toe wanneer **Automatic Ext. Texts** en
+**Sales Quote** zijn ingeschakeld. Positieve tekst begint met
+het netto aantal, negatieve tekst met **Minderwerk** en het absolute aantal.
+Tekstregels blijven aan de aangemaakte artikelregel gekoppeld, gaan daardoor
+mee door de standaard verkoopdocumentstroom en worden samen gecontroleerd en
+teruggedraaid. Een latere tekstwijziging vraagt commerciële controle, maar
+blokkeert technische Apply niet. De PIL-app leest alleen standaard Extended
+Text en blijft onafhankelijk van IWX.
 
 Gebruik geen ForceSync om een oude 1.x-variant om te zetten. Publiceren,
 installeren, upgraden of verwijderen gebeurt nooit door deze app zelf.
