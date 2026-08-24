@@ -24,9 +24,9 @@ Blue Ace price-group maintenance, or Business Central extended-text setup.
 
 | App | App ID | Version | Direct dependencies |
 |---|---|---:|---|
-| PNE Product Configurator Enhancements | `b4514682-8029-4a3d-ad9d-e887cdf51b0f` | `1.0.0.8` | IWX Product Configurator 4.1.9649.1; Bluace Pneuman 1.0.202606.5 |
-| PNE Frame Specification | `f84b335b-771e-429f-a30b-4161c3f670a1` | `1.0.0.8` | IWX Product Configurator 4.1.9649.1 |
-| PNE Production Order Reconciliation | `3dc4b8fc-77a4-4e2e-9ff2-59f99d444c68` | `2.7.0.10` | none |
+| PNE Product Configurator Enhancements | `b4514682-8029-4a3d-ad9d-e887cdf51b0f` | `1.0.0.10` | IWX Product Configurator 4.1.9649.1; Bluace Pneuman 1.0.202608.1 |
+| PNE Frame Specification | `f84b335b-771e-429f-a30b-4161c3f670a1` | `1.0.0.9` | IWX Product Configurator 4.1.9649.1 |
+| PNE Production Order Reconciliation | `3dc4b8fc-77a4-4e2e-9ff2-59f99d444c68` | `2.8.0.1` | none |
 
 All three apps target Business Central application 28.0 and runtime 17.0. The
 IWX app ID is `f558b611-3753-4d0b-98ca-6b658a4ed24a`; the Bluace app ID is
@@ -47,7 +47,7 @@ regression tests.
 1. Use a Business Central Sandbox that represents the intended master
    configuration. Do not use production for first installation or acceptance.
 2. Confirm that Product Configurator 4.1.9649.1 and Blue Ace Pneuman
-   1.0.202606.5 are already installed and operational.
+   1.0.202608.1 are already installed and operational.
 3. Compile all packages against the **exact symbols from the target Sandbox**.
    The repository's local validation is necessary but is not a substitute for
    compiling against the currently installed Business Central/IWX/Bluace build.

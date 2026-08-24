@@ -306,6 +306,16 @@ the technical report remains usable and states that the quote link cannot be
 verified with the current permissions; that is commercial review, not a report
 failure or automatic repair.
 
+When that live quote link can no longer be repaired or reversed automatically,
+**Commerciële koppeling vrijgeven** records a mandatory manual commercial
+review without changing any Sales document. The immutable resolution audit
+retains the original quote/item/quantity/price snapshot, observed current,
+missing, changed or unverifiable state, reason, user and timestamp. A released
+link remains a commercial lock: the technical proposal cannot be re-prepared,
+reallocated or handed off again. Apply may proceed only while every production
+snapshot and safety check still succeeds. The Word proposal reports released
+links in a separate audit section.
+
 The target list allocates a PIL item automatically when exactly one carrier is
 valid; more than one carrier requires an exact manual split. Apply is available
 only after the allocation check reports Gereed om toe te passen. It validates and raises

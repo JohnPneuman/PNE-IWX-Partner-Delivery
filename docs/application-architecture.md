@@ -132,6 +132,7 @@ Simulated, Firm Planned, or Released Production Order
   -> PNE PIL Change Lines (technical/commercial snapshot per carrier)
        -> read-only Change Proposal report
        -> optional grouped net morework/lesswork append to selected existing Sales Quote
+       -> immutable manual commercial-link resolution when that Sales link cannot be verified/reversed
   -> explicit Apply action
   -> standard Prod. Order Line and Component validations and triggers
   -> before/after Qty.-per-Top-Item-equivalent hour delta on one unambiguous end-item routing
@@ -213,3 +214,12 @@ linked Sales Line,
 the technical report remains usable and reports that the quote link cannot be
 verified with the current permissions; it is also commercial review, not a
 report failure or a repair attempt.
+
+An active link that has been changed, deleted, converted or cannot be read can
+be released only after a mandatory manual commercial review. Codeunit 50197
+creates `PNE PIL Quote Resolution` audit rows and sets the controlled release
+fields on the existing change lines in the same transaction. It never mutates
+Sales data during this action. Released lines remain locked against reprepare,
+reallocation and a second quote handoff; technical Apply still performs its
+full production snapshot and safety validation. The observed state is a closed
+app enum and the audit table is immutable after insert.

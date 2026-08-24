@@ -2,7 +2,7 @@
     "id": "b4514682-8029-4a3d-ad9d-e887cdf51b0f",
     "name": "PNE Product Configurator Enhancements",
     "publisher": "Pneuman",
-    "version": "1.0.0.8",
+    "version": "1.0.0.10",
     "brief": "Adds Production BOM choices, pricing, optional routing completeness, Smart Item Number Option Text, and configured sales text to IWX.",
     "description": "Enhances Insight Works Product Configurator with Production BOM Additional Choices, missing Non-Inventory BOM cost, Item Profit Group pricing, complete optional zero-time routing links, Smart Item Number segments from Option Text, and ordered quantity-prefixed Dutch Item extended text from nested configurations.",
     "privacyStatement": "",
@@ -21,7 +21,7 @@
             "id": "0aeaa135-2753-4f1b-8fc8-2f69b4cd58a8",
             "name": "Pneuman",
             "publisher": "Bluace",
-            "version": "1.0.202606.5"
+            "version": "1.0.202608.1"
         }
     ],
     "screenshots": [],

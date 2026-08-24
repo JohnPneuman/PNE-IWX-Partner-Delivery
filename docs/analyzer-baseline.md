@@ -1,13 +1,19 @@
 # Analyzer baseline
 
-## Current enforced baseline — 2026-08-23
+## Current enforced baseline — 2026-08-24
 
 The repository now has one reproducible PTE validation command for all three apps.
-The 2026-08-23 setup check completed with 0 failures and 0 warnings. The
+The 2026-08-24 setup check completed with 0 failures and 0 warnings. The
 final validation ran AL compiler **17.0.34.45391** through AL Language
 extension **17.0.2273547**, with CodeCop, UICop, and
 PerTenantExtensionCop, applies the app rulesets, and treats every Warning as an
 Error.
+
+The exact Sandbox symbol set was Microsoft Application
+28.4.53241.53312, Base Application 28.4.53241.53758, System Application
+and Business Foundation 28.4.53241.53312, System 28.0.53445.0, Insight Works
+Product Configurator 4.1.9649.1 and BluAce Pneuman 1.0.202608.1. Obsolete
+28.3 and BluAce symbol packages were removed before the final run.
 
 The original local AA0072 analyzer run reported 34 invalid object/type suffixes
 in Frame Specification and 67 in Product Configurator Enhancements. The
@@ -20,20 +26,20 @@ remains unchanged.
 
 An explicitly approved namespace migration then moved every object to
 `Pneuman.FrameSpecification` or `Pneuman.ProductConfigurator`. Microsoft
-`using` directives were resolved against the exact Business Central 28.3
+`using` directives were resolved against the exact Business Central 28.4
 symbols. AA0247 is now an Error rather than accepted baseline debt.
 
 | App | Compiler/analyzer errors | Warnings | Info |
 |---|---:|---:|---:|
-| PNE Frame Specification 1.0.0.8 | 0 | 0 | 0 |
-| PNE Product Configurator Enhancements 1.0.0.8 | 0 | 0 | 0 |
-| PNE Production Order Reconciliation 2.7.0.10 | 0 | 0 | 0 |
+| PNE Frame Specification 1.0.0.9 | 0 | 0 | 0 |
+| PNE Product Configurator Enhancements 1.0.0.10 | 0 | 0 | 0 |
+| PNE Production Order Reconciliation 2.8.0.1 | 0 | 0 | 0 |
 
 The ignored evidence is written to each app's
 `.build/validation-diagnostics.json`. Namespace consumer and Sandbox upgrade
 risks are recorded in `namespace-compatibility-audit.md`.
 
-The final 2.7.0.10 run compiled all three current apps and reported zero errors,
+The final 2.8.0.1 run compiled all three current apps and reported zero errors,
 zero warnings and zero informational diagnostics for each. The Reconciliation
 app-specific migration and Sandbox risks are recorded in
 `production-order-reconciliation.md` and its manual acceptance matrix in
@@ -46,7 +52,7 @@ validated on 2026-08-20 with zero errors and warnings, and one informational
 AA0232 on its `Used Cost Sum` FlowField. That app schema and source were
 replaced by the clean 2.0.0.0 rebuild after the old Sandbox app was removed.
 AA0232 is therefore **not** current baseline debt and must not be treated as a
-warning or known diagnostic for v2.7.0.10.
+warning or known diagnostic for v2.8.0.1.
 
 ## Historical analyzer details (pre-2026-08-20)
 

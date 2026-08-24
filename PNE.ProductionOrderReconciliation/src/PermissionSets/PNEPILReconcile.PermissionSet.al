@@ -16,6 +16,7 @@ permissionset 50187 "PNE PIL Reconcile"
                   tabledata "PNE PIL Target" = R,
                   tabledata "PNE PIL Raw Line" = R,
                   tabledata "PNE PIL Change Line" = R,
+                  tabledata "PNE PIL Quote Resolution" = R,
                   tabledata "PNE PIL Quote Reversal" = R,
                   tabledata "Company Information" = R,
                   tabledata "Production Order" = R,

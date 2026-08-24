@@ -67,17 +67,12 @@ codeunit 50103 "PNE IWX Adapter"
             if IWXCfgOptionChoicev3.Type <>
                IWXCfgOptionChoicev3.Type::"Production BOM"
             then
-                Error(
-                    'Keuzecode %1 bestaat al, maar is geen Production BOM.',
-                    ProductionBOMHeader."No.");
+                Error(ChoiceCodeNotProductionBOMErr, ProductionBOMHeader."No.");
 
             if IWXCfgOptionChoicev3."No." <>
                ProductionBOMHeader."No."
             then
-                Error(
-                    'Keuzecode %1 is gekoppeld aan nummer %2.',
-                    IWXCfgOptionChoicev3.Code,
-                    IWXCfgOptionChoicev3."No.");
+                Error(ChoiceCodeLinkedToDifferentNoErr, IWXCfgOptionChoicev3.Code, IWXCfgOptionChoicev3."No.");
 
             // IWX-kostprijs opnieuw berekenen.
             // Het OnAfterUpdateUnitCost-event telt daarna
@@ -169,4 +164,8 @@ codeunit 50103 "PNE IWX Adapter"
             IWXConfiguratorBOMv3,
             IWXCfgOptionChoicev3);
     end;
+
+    var
+        ChoiceCodeLinkedToDifferentNoErr: Label 'Keuzecode %1 is gekoppeld aan nummer %2.', Comment = '%1 = option choice code, %2 = linked number';
+        ChoiceCodeNotProductionBOMErr: Label 'Keuzecode %1 bestaat al, maar is geen Production BOM.', Comment = '%1 = production BOM number';
 }

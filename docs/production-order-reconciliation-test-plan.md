@@ -1,6 +1,6 @@
-# PNE Production Order Reconciliation 2.7 — Sandbox-testplan
+# PNE Production Order Reconciliation 2.8 — Sandbox-testplan
 
-Dit is het handmatige acceptatieplan voor versie **2.7.0.10**. Leg per run vast:
+Dit is het handmatige acceptatieplan voor versie **2.8.0.1**. Leg per run vast:
 Sandbox-URL en company, BC-versie, appversie, uitvoerder, datum,
 productieorder, bronbestand, verwachte uitkomst en werkelijke uitkomst.
 
@@ -742,6 +742,42 @@ offerteoverdracht:
 7. Pas daarna de PIL veilig toe. Controleer dat de actie
    **Offerteoverdracht terugdraaien** niet meer beschikbaar is; correctie is
    dan handmatig commercieel werk.
+
+### Duurzame vrijgave na handmatige commerciële controle
+
+Voer deze test uit met een technisch voorbereid dossier en een actieve
+offerteoverdracht:
+
+1. Wijzig of verwijder de gekoppelde offertregel, zet de offerte om naar een
+   order of test met een gebruiker zonder Sales Line-leesrecht. **Pas veilig
+   toe** moet de technische wijziging eerst blokkeren zolang de commerciële
+   koppeling actief is.
+2. Kies **Commerciële koppeling vrijgeven** en sluit het redenvenster leeg. Dit
+   moet blokkeren en mag geen auditregel maken.
+3. Laat verkoop de offerte of het vervolgdocument handmatig controleren. Kies
+   opnieuw de vrijgaveactie en leg een concrete reden vast, inclusief het
+   vervolgdocument wanneer dat bestaat.
+4. Controleer dat geen Sales Header, Sales Line, verkooporder, factuur of
+   tekstregel is gewijzigd of verwijderd.
+5. Controleer per change line **Quote Link Released** en de verwijzing naar de
+   onveranderbare **PNE PIL Quote Resolution** (50199). De audit bevat de
+   oorspronkelijke offerte-/regel-, artikel-, aantal-, tekst- en prijsgegevens,
+   de waargenomen toestand, reden, gebruiker en tijd.
+6. Open **Stap 3 - Bekijk wijzigingsvoorstel**. Het afzonderlijke blok **Audit
+   handmatig vrijgegeven commerciële koppelingen** moet alle waarden leesbaar
+   tonen en de commerciële status mag niet meer als actuele koppeling tellen.
+7. Controleer dat **Meer- en minderwerk naar bestaande offerte**, herverdelen en
+   heranalyseren geblokkeerd blijven. Dezelfde wijziging mag niet opnieuw
+   automatisch worden overgedragen.
+8. Kies **Pas veilig toe**. Dit mag alleen slagen wanneer de volledige
+   technische productieordersnapshot nog actueel en veilig is. Wijzig daarom
+   in een afzonderlijke negatieve test eerst een carrier of BOM: Apply moet
+   ondanks commerciële vrijgave veilig blokkeren.
+9. Herhaal op een reeds toegepast dossier. De commerciële audit mag worden
+   toegevoegd, maar de productieorder mag niet opnieuw worden gewijzigd.
+10. Upgrade een Sandbox met bestaande Imported, Prepared, Applied en Reversed
+    dossiers. De nieuwe velden moeten standaard `false`/`0` zijn en bestaande
+    status, quote- en reversalgegevens moeten intact blijven.
 
 ## 12. Rapport, audit en regressiegrens
 

@@ -7,10 +7,12 @@ Product Configurator while retaining deployable AL app boundaries. A monorepo
 allows shared review standards, documentation, and future CI without forcing
 unrelated functionality into one Business Central extension.
 
-Each app lives in `apps/<app-name>/`. The folder containing `app.json` is the AL
+Each app has its own project folder directly below the delivery root:
+`PNE.FrameSpecification`, `PNE.ProductConfiguratorEnhancements` and
+`PNE.ProductionOrderReconciliation`. The folder containing `app.json` is the AL
 project root. Source is organized by responsibility below `src/`; app-specific
 analyzer configuration belongs to that app. Repository-wide documentation,
-review templates, and the VS Code workspace remain at the repository root.
+review policy and the VS Code workspace remain at the delivery root.
 
 Empty applications are not created for roadmap items. Shared compiled AL
 functionality will not become a shared app until at least two real applications
@@ -18,16 +20,17 @@ need the same behavior and its dependency/versioning cost is justified.
 
 ## Folder conventions
 
-- `.github/`: collaboration templates; no CI until the build is portable.
 - `.agents/skills/`: repository-local Business Central quality instructions for
   coding agents.
-- `apps/`: independently versioned AL applications.
+- `PNE.FrameSpecification/`, `PNE.ProductConfiguratorEnhancements/` and
+  `PNE.ProductionOrderReconciliation/`: independently versioned AL
+  applications.
 - `docs/`: architecture, behavior, dependencies, quality, testing, and ADRs.
 - `docs/decisions/`: durable architecture decisions.
 - `scripts/`: read-only setup checks and local analyzer-enabled validation; no
   publishing or environment mutation.
 
-`PNE-IWX-Extensions.code-workspace` is the authoritative multi-root developer
+`PNE-IWX-Extensions.code-workspace` is the authoritative multi-root delivery
 entry point and includes all three AL project roots.
 
 Downloaded symbols, output packages, snapshots, and tenant launch configuration

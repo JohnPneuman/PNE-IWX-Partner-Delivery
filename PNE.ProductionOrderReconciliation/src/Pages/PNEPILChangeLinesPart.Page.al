@@ -97,6 +97,9 @@ page 50195 "PNE PIL Change Lines Part"
                         if Rec."Quote Reversed" then
                             Message(QuoteReversedMsg)
                         else
+                            if Rec."Quote Link Released" then
+                                Message(QuoteReleasedMsg, Rec."Quote Resolution Entry No.")
+                        else
                             if Rec."Sales Quote No." <> '' then
                             PNEPILSalesQuoteMgt.OpenSalesQuote(Rec."Sales Quote No.");
                     end;
@@ -137,10 +140,23 @@ page 50195 "PNE PIL Change Lines Part"
                     Caption = 'Terugdraai-auditnr.';
                     ToolTip = 'Geeft het onveranderbare auditnummer van de teruggedraaide offerte-overdracht weer.';
                 }
+                field("Quote Link Released"; Rec."Quote Link Released")
+                {
+                    ApplicationArea = All;
+                    Caption = 'Commercieel vrijgegeven';
+                    ToolTip = 'Geeft aan dat de live offertecontrole na handmatige commerciële beoordeling bewust is vrijgegeven. De app wijzigt niets in verkoop en stuurt dit verschil niet nogmaals automatisch naar een offerte.';
+                }
+                field("Quote Resolution Entry No."; Rec."Quote Resolution Entry No.")
+                {
+                    ApplicationArea = All;
+                    Caption = 'Vrijgave-auditnr.';
+                    ToolTip = 'Geeft het onveranderbare auditnummer met reden, gebruiker, tijd en aangetroffen koppelingstoestand weer.';
+                }
             }
         }
     }
 
     var
         QuoteReversedMsg: Label 'Deze offerte-overdracht is teruggedraaid. Kies opnieuw een offerte via de actie op het PIL-dossier als deze wijziging alsnog commercieel moet worden verwerkt.';
+        QuoteReleasedMsg: Label 'Deze commerciële koppeling is handmatig vrijgegeven onder auditnummer %1. Open het wijzigingsvoorstel voor reden en aangetroffen toestand; de app opent of wijzigt de oorspronkelijke offerte niet automatisch.', Comment = '%1 = commercial quote resolution audit entry number';
 }

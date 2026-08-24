@@ -1,6 +1,6 @@
 # PNE Production Order Reconciliation
 
-Versie **2.7.0.10** zet een werkelijk AutoCAD-PIL-bestand veilig om naar de
+Versie **2.8.0.1** zet een werkelijk AutoCAD-PIL-bestand veilig om naar de
 technische inhoud van één productieorder. De app is bedoeld wanneer AutoCAD de
 werkelijke artikelen kent, terwijl de productieorder nog een samengesteld
 carrier-artikel of een `CALC-*`-placeholder bevat.
@@ -17,6 +17,19 @@ code heeft als de gevonden, geldige Production BOM maar het artikelveld
 **Production BOM No.** leeg of afwijkend is, kan **Puntartikel verhogen** die
 artikelkoppeling na een afzonderlijke bevestiging herstellen. Alle beslissingen
 en bronregels blijven bewaard in een PIL-dossier.
+
+Versie 2.8.0.1 voegt een duurzame commerciële herstelstatus toe. Wanneer een
+vóór Apply gekoppelde offerte of offertregel later is gewijzigd, verwijderd,
+omgezet of niet meer leesbaar is, kan een bevoegde gebruiker na handmatige
+commerciële controle **Commerciële koppeling vrijgeven** kiezen. De actie
+wijzigt niets in verkoop. Zij bewaart de aangetroffen koppelingstoestand,
+oorspronkelijke offerte- en artikelgegevens, verplichte reden, gebruiker en
+datum/tijd in een onveranderbare audit. De technische verdeling blijft
+bevroren, alle productiecontroles blijven actief en dezelfde wijziging kan niet
+nogmaals automatisch naar een offerte worden gestuurd.
+
+De publiceerbare gebruikershandleidingen met Business Central-schermafbeeldingen
+staan in `docs/user-guides`.
 
 ## Voor de dagelijkse gebruiker
 

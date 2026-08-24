@@ -39,6 +39,8 @@ table 50194 "PNE PIL Change Line"
         field(28; "Sales Quote Line SystemId"; Guid) { Caption = 'Sales Quote Line SystemId'; DataClassification = SystemMetadata; }
         field(29; "Sales Quote Line Modified At"; DateTime) { Caption = 'Sales Quote Line Modified At'; DataClassification = SystemMetadata; }
         field(30; "Target Line No."; Integer) { Caption = 'PIL Target Line No.'; DataClassification = CustomerContent; Editable = false; }
+        field(31; "Quote Link Released"; Boolean) { Caption = 'Quote Link Released'; DataClassification = CustomerContent; }
+        field(32; "Quote Resolution Entry No."; Integer) { Caption = 'Quote Resolution Entry No.'; DataClassification = CustomerContent; TableRelation = "PNE PIL Quote Resolution"."Entry No."; }
     }
 
     keys
@@ -60,6 +62,8 @@ table 50194 "PNE PIL Change Line"
                 Error(AppliedChangeLineErr);
             exit;
         end;
+        if IsControlledQuoteReleaseUpdate(xRec) then
+            exit;
         Error(ChangeLineChangeErr);
     end;
 
@@ -76,7 +80,9 @@ table 50194 "PNE PIL Change Line"
 
     local procedure IsControlledQuoteHandoffUpdate(OldPNEPILChangeLine: Record "PNE PIL Change Line"): Boolean
     begin
-        if ("Sales Quote No." = '') or "Quote Reversed" or ("Quote Reversal Entry No." <> 0) then
+        if ("Sales Quote No." = '') or "Quote Reversed" or "Quote Link Released" or
+           ("Quote Reversal Entry No." <> 0) or ("Quote Resolution Entry No." <> 0)
+        then
             exit(false);
         if IsNullGuid("Sales Quote Line SystemId") or ("Sales Quote Line Modified At" = 0DT) then
             exit(false);
@@ -91,7 +97,7 @@ table 50194 "PNE PIL Change Line"
     var
         PNEPILQuoteReversal: Record "PNE PIL Quote Reversal";
     begin
-        if (OldPNEPILChangeLine."Sales Quote No." = '') or OldPNEPILChangeLine."Quote Reversed" then
+        if (OldPNEPILChangeLine."Sales Quote No." = '') or OldPNEPILChangeLine."Quote Reversed" or OldPNEPILChangeLine."Quote Link Released" then
             exit(false);
         if not HasSameTechnicalSnapshot(OldPNEPILChangeLine) then
             exit(false);
@@ -105,6 +111,8 @@ table 50194 "PNE PIL Change Line"
            ("Quote Line Description" <> OldPNEPILChangeLine."Quote Line Description") or
            ("Sales Quote Line SystemId" <> OldPNEPILChangeLine."Sales Quote Line SystemId") or
            ("Sales Quote Line Modified At" <> OldPNEPILChangeLine."Sales Quote Line Modified At") or
+           "Quote Link Released" or
+           ("Quote Resolution Entry No." <> 0) or
            not "Quote Reversed" or
            ("Quote Reversal Entry No." = 0)
         then
@@ -118,6 +126,41 @@ table 50194 "PNE PIL Change Line"
             (PNEPILQuoteReversal."Sales Quote Line No." = "Sales Quote Line No.") and
             (PNEPILQuoteReversal."Sales Quote Line SystemId" = "Sales Quote Line SystemId") and
             (PNEPILQuoteReversal."Sales Quote Line Modified At" = "Sales Quote Line Modified At"));
+    end;
+
+    local procedure IsControlledQuoteReleaseUpdate(OldPNEPILChangeLine: Record "PNE PIL Change Line"): Boolean
+    var
+        PNEPILQuoteResolution: Record "PNE PIL Quote Resolution";
+    begin
+        if (OldPNEPILChangeLine."Sales Quote No." = '') or OldPNEPILChangeLine."Quote Reversed" or OldPNEPILChangeLine."Quote Link Released" then
+            exit(false);
+        if not HasSameTechnicalSnapshot(OldPNEPILChangeLine) then
+            exit(false);
+        if ("Sales Quote No." <> OldPNEPILChangeLine."Sales Quote No.") or
+           ("Sales Quote Line No." <> OldPNEPILChangeLine."Sales Quote Line No.") or
+           ("Quote Unit Price" <> OldPNEPILChangeLine."Quote Unit Price") or
+           ("Quote Line Amount" <> OldPNEPILChangeLine."Quote Line Amount") or
+           ("Quote Currency Code" <> OldPNEPILChangeLine."Quote Currency Code") or
+           ("Quote Added At" <> OldPNEPILChangeLine."Quote Added At") or
+           ("Quote Added By" <> OldPNEPILChangeLine."Quote Added By") or
+           ("Quote Line Description" <> OldPNEPILChangeLine."Quote Line Description") or
+           ("Sales Quote Line SystemId" <> OldPNEPILChangeLine."Sales Quote Line SystemId") or
+           ("Sales Quote Line Modified At" <> OldPNEPILChangeLine."Sales Quote Line Modified At") or
+           "Quote Reversed" or
+           ("Quote Reversal Entry No." <> 0) or
+           not "Quote Link Released" or
+           ("Quote Resolution Entry No." = 0)
+        then
+            exit(false);
+        if not PNEPILQuoteResolution.Get("Quote Resolution Entry No.") then
+            exit(false);
+        exit(
+            (PNEPILQuoteResolution."Header Entry No." = "Header Entry No.") and
+            (PNEPILQuoteResolution."Change Line No." = "Line No.") and
+            (PNEPILQuoteResolution."Sales Quote No." = "Sales Quote No.") and
+            (PNEPILQuoteResolution."Sales Quote Line No." = "Sales Quote Line No.") and
+            (PNEPILQuoteResolution."Sales Quote Line SystemId" = "Sales Quote Line SystemId") and
+            (PNEPILQuoteResolution."Sales Quote Line Modified At" = "Sales Quote Line Modified At"));
     end;
 
     local procedure HasSameTechnicalSnapshot(OldPNEPILChangeLine: Record "PNE PIL Change Line"): Boolean
@@ -145,6 +188,6 @@ table 50194 "PNE PIL Change Line"
 
     var
         AppliedChangeLineErr: Label 'Voorstelregels van een toegepast PIL-dossier kunnen niet worden gewijzigd of verwijderd.';
-        ChangeLineChangeErr: Label 'PIL-voorstelregels zijn auditregels. Gebruik de acties voor offerteoverdracht of terugdraaien; wijzig deze regels niet rechtstreeks.';
+        ChangeLineChangeErr: Label 'PIL-voorstelregels zijn auditregels. Gebruik de acties voor offerteoverdracht, terugdraaien of commerciële vrijgave; wijzig deze regels niet rechtstreeks.';
         TransferredChangeLineErr: Label 'Een voorstelregel die aan een offerte is toegevoegd, kan niet worden gewijzigd of verwijderd.';
 }

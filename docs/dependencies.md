@@ -91,7 +91,7 @@ WorkDate. It does not modify extended-text master data.
 
 ## Blue Ace Pneuman
 
-Required version: **1.0.202606.5**
+Required version: **1.0.202608.1**
 
 App ID: `0aeaa135-2753-4f1b-8fc8-2f69b4cd58a8`
 
@@ -120,7 +120,7 @@ against Microsoft Business Central application 28.x symbols.
 | Reservation Entry | Follows existing linked production-order demand and detects reservations | Source filter, paired entry and ordertracking semantics |
 | Production BOM Header/Line/Version and VersionManagement | Read-only structural fallback and temporary configuration tree: stored root Production BOM Version Code where present, otherwise certified/date-valid child selection | Certification, start/due/work-date filtering, existing routing-link display and recursive/cycle/display-limit semantics; conversion/mismatch must block the PIL fallback rather than be estimated |
 | Item | Constrains group setup, resolves imported descriptions and recalculates the CALC Unit Cost; resolves a child BOM beneath an Item in the temporary configuration tree; after a separate user confirmation repairs only a same-number point Item's missing/incorrect Production BOM No. through standard validation | Inventory/Non-Inventory type, Production BOM No. and Unit Cost validation; existing Item subscribers must run and no general direct Item-modify permission is granted |
-| Sales Header, Sales Line and standard Extended Text | Validates a selected existing eligible Sales Quote, appends grouped original-to-final net morework or lesswork as new Item lines and inserts applicable automatic attached article text | Open/Quote Accepted/valid-until state, standard Sales Line price calculation, positive/negative quantity validation, line numbering, currency, item/variant/UOM validation, `Automatic Ext. Texts`, Sales Quote/date/language text applicability and shared Item/text-link integrity; codeunit 50197 carries only indirect read permission for Item and Extended Text master data, while the user still needs normal separate Sales Header/Line read/create rights |
+| Sales Header, Sales Line and standard Extended Text | Validates a selected existing eligible Sales Quote, appends grouped original-to-final net morework or lesswork as new Item lines, inserts applicable automatic attached article text and observes the current link state for reversal/manual-resolution audit | Open/Quote Accepted/valid-until state, standard Sales Line price calculation, positive/negative quantity validation, line numbering, currency, item/variant/UOM validation, `Automatic Ext. Texts`, Sales Quote/date/language text applicability and shared Item/text-link integrity; codeunit 50197 carries only indirect read permission for Item and Extended Text master data, while the user still needs normal separate Sales Header/Line read/create rights. Manual release never writes Sales data and records `Cannot Verify` when the current user cannot read the link. |
 | Sales Quotes and Sales Quote pages | Presents the user-selected existing Sales Quote and opens it after successful handoff | Public lookup/page-action anchors; the application code creates no quote and never edits an existing quote line; PNE PIL Reconcile deliberately grants no sales-table or sales-page rights |
 | Simulated/Firm Planned/Released Production Order pages | Host Import, PIL-history and read-only BOM-stamstructuur actions | Public page/action anchors and standard page access |
 | InStream and UploadIntoStream | Read the headerless, single-quoted four-field AutoCAD file | Encoding, line read and quote/decimal semantics |

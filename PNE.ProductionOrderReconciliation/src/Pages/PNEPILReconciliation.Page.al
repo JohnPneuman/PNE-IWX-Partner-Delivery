@@ -256,6 +256,28 @@ page 50183 "PNE PIL Reconciliation"
                     CurrPage.Update(false);
                 end;
             }
+            action(PNEReleaseSalesQuoteHandoff)
+            {
+                ApplicationArea = All;
+                Caption = 'Commerciële koppeling vrijgeven';
+                Enabled = CanReleaseSalesQuoteHandoff;
+                Visible = CanReleaseSalesQuoteHandoff;
+                Image = UnLinkAccount;
+                ToolTip = 'Legt met verplichte reden vast dat de gekoppelde offerte handmatig commercieel is beoordeeld. De app wijzigt niets in verkoop, maar een technisch nog actueel voorstel kan daarna worden toegepast. Dezelfde wijziging kan niet nogmaals automatisch naar een offerte.';
+
+                trigger OnAction()
+                var
+                    PNEPILSalesQuoteMgt: Codeunit "PNE PIL Sales Quote Mgt.";
+                    PNEPILReasonDialog: Page "PNE PIL Reason Dialog";
+                begin
+                    PNEPILReasonDialog.SetContext(ReleaseQuoteHeadingTxt, ReleaseQuoteInstructionsTxt);
+                    if PNEPILReasonDialog.RunModal() <> Action::OK then
+                        exit;
+                    if PNEPILSalesQuoteMgt.ReleaseActiveQuoteHandoff(Rec, PNEPILReasonDialog.GetReason()) then
+                        Message(QuoteHandoffReleasedMsg);
+                    CurrPage.Update(false);
+                end;
+            }
             action(PNEApplyPIL)
             {
                 ApplicationArea = All;
@@ -317,25 +339,37 @@ page 50183 "PNE PIL Reconciliation"
         PNEPILMgt: Codeunit "PNE PIL Mgt.";
         PNEPILSalesQuoteMgt: Codeunit "PNE PIL Sales Quote Mgt.";
         HasActiveQuoteHandoff: Boolean;
+        HasCommerciallyLockedHandoff: Boolean;
+        HasReleasedQuoteHandoff: Boolean;
         NoProductionChanges: Boolean;
     begin
-        HasActiveQuoteHandoff := PNEPILSalesQuoteMgt.HasActiveQuoteHandoff(Rec);
+        PNEPILSalesQuoteMgt.GetQuoteHandoffState(
+            Rec,
+            HasActiveQuoteHandoff,
+            HasCommerciallyLockedHandoff,
+            HasReleasedQuoteHandoff);
         NoProductionChanges := PNEPILMgt.HasNoProductionChanges(Rec);
         CanPrepare := Rec.Status = Rec.Status::Imported;
         CanReprepare :=
             (Rec.Status in [Rec.Status::"Allocation Required", Rec.Status::Prepared]) and
-            not HasActiveQuoteHandoff;
+            not HasCommerciallyLockedHandoff;
         CanCheckAllocation := Rec.Status = Rec.Status::"Allocation Required";
         CanPrintProposal := Rec.Status in [Rec.Status::Prepared, Rec.Status::Applied];
-        CanAddToSalesQuote :=
-            (Rec.Status in [Rec.Status::Prepared, Rec.Status::Applied]) and
-            not NoProductionChanges and
-            (PNEPILSalesQuoteMgt.GetQuotableNetChangeCount(Rec) > 0) and
-            not HasActiveQuoteHandoff;
+        CanAddToSalesQuote := false;
+        if (Rec.Status in [Rec.Status::Prepared, Rec.Status::Applied]) and
+           not NoProductionChanges and
+           not HasCommerciallyLockedHandoff
+        then
+            CanAddToSalesQuote := PNEPILSalesQuoteMgt.GetQuotableNetChangeCount(Rec) > 0;
         CanApply := Rec.Status = Rec.Status::Prepared;
         CanReverseSalesQuoteHandoff :=
             (Rec.Status = Rec.Status::Prepared) and HasActiveQuoteHandoff;
+        CanReleaseSalesQuoteHandoff :=
+            (Rec.Status in [Rec.Status::Prepared, Rec.Status::Applied]) and HasActiveQuoteHandoff;
         Clear(SafetyNoticeText);
+
+        if HasReleasedQuoteHandoff then
+            SafetyNoticeText := ReleasedQuoteSafetyNoticeTxt;
 
         case Rec.Status of
             Rec.Status::Imported:
@@ -368,6 +402,7 @@ page 50183 "PNE PIL Reconciliation"
         CanPrepare: Boolean;
         CanPrintProposal: Boolean;
         CanReprepare: Boolean;
+        CanReleaseSalesQuoteHandoff: Boolean;
         CanReverseSalesQuoteHandoff: Boolean;
         NextStepText: Text[500];
         SafetyNoticeText: Text[500];
@@ -386,6 +421,10 @@ page 50183 "PNE PIL Reconciliation"
         PreparedNextStepTxt: Label 'Stap 3 van 4: bekijk het wijzigingsvoorstel en kies eerst ''Pas veilig toe''. Zet daarna het netto meer- en minderwerk op een bestaande offerte. Wilt u toch eerst offreren, dan waarschuwt de app voor de juiste volgorde.';
         PreparedNoChangesNextStepTxt: Label 'Deze PIL is al volledig in de productieorder verwerkt of bevat alleen bewust genegeerde regels. Kies ''Pas veilig toe'' om het dossier zonder dubbele wijzigingen als compleet vast te leggen.';
         QuoteHandoffReversedMsg: Label 'De offerteoverdracht is teruggedraaid. Alleen de nog ongewijzigde artikel- en gekoppelde tekstregels die door deze PIL zijn toegevoegd, zijn verwijderd. U kunt nu de juiste offerte kiezen.';
+        QuoteHandoffReleasedMsg: Label 'De commerciële koppeling is met reden vrijgegeven. Er is niets in verkoop gewijzigd. Een technisch nog actueel voorstel kan nu veilig worden toegepast; dezelfde wijziging wordt niet nogmaals automatisch naar een offerte gestuurd.';
+        ReleaseQuoteHeadingTxt: Label 'Commerciële koppeling vrijgeven';
+        ReleaseQuoteInstructionsTxt: Label 'Gebruik dit alleen nadat de offerte of vervolgorder handmatig commercieel is gecontroleerd. De app verwijdert of wijzigt niets in verkoop. De reden, gebruiker, tijd en aangetroffen koppelingstoestand blijven in het auditdossier staan.';
+        ReleasedQuoteSafetyNoticeTxt: Label 'De oorspronkelijke offerte-koppeling is handmatig commercieel vrijgegeven. Controleer de vastgelegde reden in het wijzigingsvoorstel. Er wordt niets meer automatisch naar een offerte gestuurd.';
         ReprepareQst: Label 'De analyse wordt opnieuw opgebouwd op basis van de huidige productieorder. Bestaande handmatige verdelingen worden vervangen. Doorgaan?';
         ReverseQuoteHeadingTxt: Label 'Offerteoverdracht terugdraaien';
         ReverseQuoteInstructionsTxt: Label 'Deze actie verwijdert uitsluitend de nog ongewijzigde artikel- en gekoppelde tekstregels die deze PIL zelf heeft toegevoegd. Geef een duidelijke reden op; deze wordt in het auditdossier bewaard.';

@@ -79,7 +79,7 @@ PNE Production Order Reconciliation range: **50170–50201**.
 | Page extension | 50191 | PNE Released Prod. Order PIL | Production Reconciliation | PIL actions on Released Production Order | Assigned |
 | Codeunit | 50192 | PNE PIL Cost Mgt. | Production Reconciliation | Average real-item cost to CALC placeholder | Assigned |
 | Enum | 50193 | PNE PIL Analysis Source | Production Reconciliation | Live production-order versus read-only master-BOM analysis provenance | Assigned |
-| Table | 50194 | PNE PIL Change Line | Production Reconciliation | Per-carrier technical/commercial proposal, cost indication and sales-quote handoff/reversal link | Assigned |
+| Table | 50194 | PNE PIL Change Line | Production Reconciliation | Per-carrier technical/commercial proposal, cost indication and sales-quote handoff/reversal/resolution link | Assigned |
 | Page | 50195 | PNE PIL Change Lines Part | Production Reconciliation | Read-only proposal part on the reconciliation card | Assigned |
 | Report | 50196 | PNE PIL Change Proposal | Production Reconciliation | Technical/commercial proposal with carrier decisions, quote-link review and reversal audit; raw AutoCAD rows remain hidden audit data | Assigned |
 | Codeunit | 50197 | PNE PIL Sales Quote Mgt. | Production Reconciliation | Safe selected-quote handoff of grouped net morework/lesswork and pre-Apply reversal | Assigned |
@@ -89,10 +89,12 @@ PNE Production Order Reconciliation range: **50170–50201**.
 | Page | 50199 | PNE PIL Reason Dialog | Production Reconciliation | Mandatory-reason dialog for deliberate PIL exceptions and quote-handoff reversal | Assigned |
 | Permission set | 50199 | PNE PIL Setup | Production Reconciliation | Separate PIL-group/article maintenance and CALC-cost role | Assigned |
 | Codeunit | 50199 | PNE PO Config. Structure Mgt. | Production Reconciliation | Bouwt de tijdelijke, alleen-lezen configuratiestructuur uit de bestaande Production BOM | Assigned |
+| Table | 50199 | PNE PIL Quote Resolution | Production Reconciliation | Immutable audit of a manually reviewed commercial-link release without Sales-document mutation | Assigned |
+| Enum | 50199 | PNE PIL Quote Link State | Production Reconciliation | Observed current/missing/changed/unverifiable state of a released quote link | Assigned |
 | Page | 50200 | PNE PIL Destination Lookup | Production Reconciliation | Keuze van een bestaande productieregel voor een bewust los toegevoegd AutoCAD-component | Assigned |
 | Page | 50201 | PNE PIL Carrier Lookup | Production Reconciliation | Zoekt alle geschikte puntartikelen waarvan de gecertificeerde Production BOM het AutoCAD-artikel bevat | Assigned |
 
 No numeric allocation remains free in the configured 50170..50201 range. Identieke nummers zijn
 bewust toegestaan voor verschillende AL-objecttypen: 50198 wordt gebruikt door
-een Table, Page en Permission set; 50199 door een Page, Permission set en
-Codeunit. Dit maakt geen tabel, veld of migratie dubbel.
+een Table, Page en Permission set; 50199 door een Table, Enum, Page, Permission
+set en Codeunit. Dit maakt geen tabel, veld of migratie dubbel.

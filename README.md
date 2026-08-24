@@ -34,8 +34,9 @@ credentials. A clean exported archive does not include Git history.
 - `docs/production-order-reconciliation.md` and its test plan: the complete
   four-step PIL workflow, safety boundaries, routing/quote behavior and manual
   Sandbox acceptance matrix.
-- `docs/release-manifest-2026-08-23.md`: the one package to deploy in this
-  release, its hash and the remaining exact-target-Sandbox release gates.
+- `docs/release-manifest-2026-08-24.md`: the three PTE packages in this
+  release, their hashes, installation order and remaining Sandbox acceptance
+  gates.
 
 ## Insight Works Business Rules compatibility
 
@@ -76,12 +77,12 @@ Business Central report-layout selection without changing AL code.
    PerTenantExtensionCop and report every Info diagnostic.
 7. Perform and retain the relevant Sandbox tests before release.
 
-Current source versions are Frame Specification 1.0.0.8, Product Configurator
-Enhancements 1.0.0.8 and Production Order Reconciliation 2.7.0.10. Only
-Reconciliation 2.7.0.10 is a deployment artifact in this release. The other two
-apps are rebuilt only for validation; do not redeploy a different binary under
-their unchanged 1.0.0.8 version. Rebuild all apps against the exact symbols from
-the target Sandbox and update the Reconciliation hash if its bytes differ.
+Current source and package versions are Frame Specification 1.0.0.9, Product
+Configurator Enhancements 1.0.0.10 and Production Order Reconciliation
+2.8.0.1. Install all three packages in the order stated in
+`docs/release-manifest-2026-08-24.md`. The checked release packages were built
+against the exact target-Sandbox symbols; if a partner rebuild changes their
+bytes, record new hashes and repeat the complete acceptance gate.
 
 Generated packages remain ignored by Git. Preserve every app ID and all
 existing object/field IDs, and do not publish, install, upgrade, or target

@@ -11,9 +11,11 @@ inseparable extension.
 
 ## Decision
 
-Keep independently deployable apps below `apps/`, with repository-wide
-documentation and review policy at the root. Do not create empty future apps or
-a shared AL app until real consumers justify them.
+Keep independently deployable app projects at the repository root in this
+self-contained partner delivery, with repository-wide documentation and review
+policy beside them. Do not create empty future apps or a shared AL app until
+real consumers justify them. Pneuman's internal development repository may use
+an `apps/` container; that internal layout is deliberately not exported here.
 
 ## Consequences
 

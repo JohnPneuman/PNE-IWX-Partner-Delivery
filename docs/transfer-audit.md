@@ -1,6 +1,6 @@
 # Transfer audit — IWX Business Rules and extension safety
 
-Audit date: 2026-08-23
+Audit date: 2026-08-24
 Scope: all three delivered apps
 
 ## Result
@@ -51,9 +51,12 @@ acceptance. The required regression scenarios remain in `test-plan.md` and
 
 ## Build and acceptance status
 
-- All three apps completed the standard repository validation against exact local
-  Business Central 28.3 and dependency symbols using AL compiler
-  17.0.34.45391.
+- All three apps completed the standard repository validation against the exact
+  target-Sandbox Business Central 28.4 symbols (Application
+  28.4.53241.53312, Base Application 28.4.53241.53758, System Application and
+  Business Foundation 28.4.53241.53312, System 28.0.53445.0), Insight Works
+  Product Configurator 4.1.9649.1 and BluAce Pneuman 1.0.202608.1, using AL
+  compiler 17.0.34.45391.
 - CodeCop, UICop, and PerTenantExtensionCop ran with warnings as errors and
   reported 0 errors, 0 warnings, and 0 informational diagnostics for all three
   apps.

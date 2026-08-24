@@ -869,13 +869,13 @@ codeunit 50178 "PNE PIL Mgt."
         CalculationDates: Dictionary of [Date, Boolean];
     begin
         GetProductionOrderCalculationDates(PNEPILHeader, CalculationDates);
-        if (PointCarrierItem."Production BOM No." <> '') and
-           ProductionBOMContainsItemOnAnyOrderDate(
-                PointCarrierItem."Production BOM No.",
-                PILItemNo,
-                CalculationDates)
-        then
-            exit(PointCarrierLinkReadyTxt);
+        if PointCarrierItem."Production BOM No." <> '' then
+            if ProductionBOMContainsItemOnAnyOrderDate(
+                 PointCarrierItem."Production BOM No.",
+                 PILItemNo,
+                 CalculationDates)
+            then
+                exit(PointCarrierLinkReadyTxt);
 
         if ProductionBOMContainsItemOnAnyOrderDate(
              PointCarrierItem."No.",
@@ -901,23 +901,25 @@ codeunit 50178 "PNE PIL Mgt."
 
         PointCarrierItem.Get(PointCarrierItem."No.");
         GetProductionOrderCalculationDates(PNEPILHeader, CalculationDates);
-        if (PointCarrierItem."Production BOM No." <> '') and
-           ProductionBOMContainsItemOnAnyOrderDate(
-                PointCarrierItem."Production BOM No.",
-                PILItemNo,
-                CalculationDates)
-        then
-            exit(true);
+        if PointCarrierItem."Production BOM No." <> '' then
+            if ProductionBOMContainsItemOnAnyOrderDate(
+                 PointCarrierItem."Production BOM No.",
+                 PILItemNo,
+                 CalculationDates)
+            then
+                exit(true);
 
         ProposedProductionBOMNo := PointCarrierItem."No.";
         if not IsPointCarrierItemNo(PointCarrierItem."No.") or
            (PointCarrierItem.Type <> PointCarrierItem.Type::Inventory) or
            (PointCarrierItem."Replenishment System" <> PointCarrierItem."Replenishment System"::"Prod. Order") or
-           (PointCarrierItem."Base Unit of Measure" <> PiecesUnitOfMeasureLbl) or
-           not ProductionBOMContainsItemOnAnyOrderDate(
-                ProposedProductionBOMNo,
-                PILItemNo,
-                CalculationDates)
+           (PointCarrierItem."Base Unit of Measure" <> PiecesUnitOfMeasureLbl)
+        then
+            Error(PointCarrierItemNotSupportedErr, PointCarrierItem."No.");
+        if not ProductionBOMContainsItemOnAnyOrderDate(
+             ProposedProductionBOMNo,
+             PILItemNo,
+             CalculationDates)
         then
             Error(PointCarrierItemNotSupportedErr, PointCarrierItem."No.");
 
@@ -937,13 +939,13 @@ codeunit 50178 "PNE PIL Mgt."
 
         PointCarrierItem.LockTable();
         PointCarrierItem.Get(PointCarrierItem."No.");
-        if (PointCarrierItem."Production BOM No." <> '') and
-           ProductionBOMContainsItemOnAnyOrderDate(
-                PointCarrierItem."Production BOM No.",
-                PILItemNo,
-                CalculationDates)
-        then
-            exit(true);
+        if PointCarrierItem."Production BOM No." <> '' then
+            if ProductionBOMContainsItemOnAnyOrderDate(
+                 PointCarrierItem."Production BOM No.",
+                 PILItemNo,
+                 CalculationDates)
+            then
+                exit(true);
         if PointCarrierItem."Production BOM No." <> OriginalProductionBOMNo then
             Error(PointCarrierLinkChangedDuringConfirmationErr, PointCarrierItem."No.");
 
@@ -976,19 +978,18 @@ codeunit 50178 "PNE PIL Mgt."
              CandidateItem)
         then begin
             CandidateItem.Reset();
-            if CandidateItem.Get(ProductionBOMLine."Production BOM No.") and
-               IsPointCarrierItemNo(CandidateItem."No.")
-            then begin
-                ActualProductionBOMNo := CandidateItem."Production BOM No.";
-                if ActualProductionBOMNo = '' then
-                    ActualProductionBOMNo := EmptyValueTxt;
-                exit(
-                    StrSubstNo(
-                        PointCarrierBOMFieldMismatchErr,
-                        CandidateItem."No.",
-                        ProductionBOMLine."Production BOM No.",
-                        ActualProductionBOMNo));
-            end;
+            if CandidateItem.Get(ProductionBOMLine."Production BOM No.") then
+                if IsPointCarrierItemNo(CandidateItem."No.") then begin
+                    ActualProductionBOMNo := CandidateItem."Production BOM No.";
+                    if ActualProductionBOMNo = '' then
+                        ActualProductionBOMNo := EmptyValueTxt;
+                    exit(
+                        StrSubstNo(
+                            PointCarrierBOMFieldMismatchErr,
+                            CandidateItem."No.",
+                            ProductionBOMLine."Production BOM No.",
+                            ActualProductionBOMNo));
+                end;
             exit(
                 StrSubstNo(
                     NoPointCarrierItemForBOMErr,
@@ -1835,12 +1836,11 @@ codeunit 50178 "PNE PIL Mgt."
                     exit(true);
                 end;
                 ChildProductionBOMNo := GetChildProductionBOMNo(ProductionBOMLine);
-                if (ChildProductionBOMNo <> '') and
-                   ProductionBOMContainsItem(ChildProductionBOMNo, CalculationDate, '', false, ItemNo, BOMPath)
-                then begin
-                    BOMPath.Remove(ProductionBOMNo);
-                    exit(true);
-                end;
+                if ChildProductionBOMNo <> '' then
+                    if ProductionBOMContainsItem(ChildProductionBOMNo, CalculationDate, '', false, ItemNo, BOMPath) then begin
+                        BOMPath.Remove(ProductionBOMNo);
+                        exit(true);
+                    end;
             until ProductionBOMLine.Next() = 0;
 
         BOMPath.Remove(ProductionBOMNo);
@@ -2434,26 +2434,26 @@ codeunit 50178 "PNE PIL Mgt."
                     end else
                         ProductionBOMNo := GetProductionBOMNoForComponent(PotentialHigherDriverProdOrderComponent);
 
-                    if (ProductionBOMNo <> '') and
-                       HasCertifiedProductionBOM(
-                         ProductionBOMNo,
-                         CalculationDate,
-                         RequestedVersionCode,
-                         UseRequestedVersion)
-                    then begin
-                        EnsureProductionBOMItemIndex(
-                            ProductionBOMNo,
-                            CalculationDate,
-                            RequestedVersionCode,
-                            UseRequestedVersion,
-                            HigherDriverBOMItemIndex,
-                            IndexedHigherDriverBOMs,
-                            BOMIndexKey);
-                        if HigherDriverBOMItemIndex.ContainsKey(
-                             BOMIndexKey + '|' + CandidateProdOrderComponent."Item No.")
-                        then
-                            exit(true);
-                    end;
+                    if ProductionBOMNo <> '' then
+                        if HasCertifiedProductionBOM(
+                             ProductionBOMNo,
+                             CalculationDate,
+                             RequestedVersionCode,
+                             UseRequestedVersion)
+                        then begin
+                            EnsureProductionBOMItemIndex(
+                                ProductionBOMNo,
+                                CalculationDate,
+                                RequestedVersionCode,
+                                UseRequestedVersion,
+                                HigherDriverBOMItemIndex,
+                                IndexedHigherDriverBOMs,
+                                BOMIndexKey);
+                            if HigherDriverBOMItemIndex.ContainsKey(
+                                 BOMIndexKey + '|' + CandidateProdOrderComponent."Item No.")
+                            then
+                                exit(true);
+                        end;
                 end;
             until PotentialHigherDriverProdOrderComponent.Next() = 0;
         exit(false);
@@ -4199,9 +4199,9 @@ codeunit 50178 "PNE PIL Mgt."
         RecalculateTargetQuantities(PNEPILHeader);
         UpdateTargetAllocationStatus(PNEPILHeader);
         UpdateCarrierConflictResolutions(PNEPILHeader);
-        IsPrepared :=
-            AllAllocationsComplete(PNEPILHeader) and
-            not HasUnresolvedCarrierQuantityConflict(PNEPILHeader);
+        IsPrepared := AllAllocationsComplete(PNEPILHeader);
+        if IsPrepared then
+            IsPrepared := not HasUnresolvedCarrierQuantityConflict(PNEPILHeader);
         if IsPrepared then begin
             if PNEPILHeader.Status <> PNEPILHeader.Status::Prepared then begin
                 PNEPILHeader.Status := PNEPILHeader.Status::Prepared;
@@ -5063,12 +5063,11 @@ codeunit 50178 "PNE PIL Mgt."
         PNEPILChangeLine.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
         if PNEPILChangeLine.FindSet() then
             repeat
-                if (Abs(PNEPILChangeLine."Quantity Difference") > QuantityTolerance()) and
-                   not PNEPILSalesQuoteMgt.IsDirectComponentChangeLine(PNEPILChangeLine) and
-                   (Abs(PNEPILSalesQuoteMgt.GetCommercialGroupNetQuantity(PNEPILChangeLine)) > QuantityTolerance()) and
-                   ((PNEPILChangeLine."Sales Quote No." = '') or PNEPILChangeLine."Quote Reversed")
-                then
-                    Error(QuotedProposalChangedErr, PNEPILChangeLine."Carrier Item No.");
+                if Abs(PNEPILChangeLine."Quantity Difference") > QuantityTolerance() then
+                    if not PNEPILSalesQuoteMgt.IsDirectComponentChangeLine(PNEPILChangeLine) then
+                        if (PNEPILChangeLine."Sales Quote No." = '') or PNEPILChangeLine."Quote Reversed" then
+                            if Abs(PNEPILSalesQuoteMgt.GetCommercialGroupNetQuantity(PNEPILChangeLine)) > QuantityTolerance() then
+                                Error(QuotedProposalChangedErr, PNEPILChangeLine."Carrier Item No.");
             until PNEPILChangeLine.Next() = 0;
 
         QuotableNetChangeCount :=
@@ -6009,10 +6008,9 @@ codeunit 50178 "PNE PIL Mgt."
         if ProdOrderLine."Finished Quantity" <> 0 then
             Error(FinishedCarrierErr, ProdOrderLine."Item No.");
         ProdOrderLine.CalcFields("Reserved Quantity", "Reserved Qty. (Base)");
-        if ((ProdOrderLine."Reserved Quantity" <> 0) or (ProdOrderLine."Reserved Qty. (Base)" <> 0)) and
-           HasUnsafeProdOrderLineReservation(ProdOrderLine)
-        then
-            Error(CarrierReservedErr, ProdOrderLine."Item No.");
+        if (ProdOrderLine."Reserved Quantity" <> 0) or (ProdOrderLine."Reserved Qty. (Base)" <> 0) then
+            if HasUnsafeProdOrderLineReservation(ProdOrderLine) then
+                Error(CarrierReservedErr, ProdOrderLine."Item No.");
         CheckOpenProductionJournal(ProdOrderLine);
         CheckProductionOrderRoutingSafety(ProdOrderLine);
     end;
@@ -6206,10 +6204,9 @@ codeunit 50178 "PNE PIL Mgt."
         ProdOrderComponent.CalcFields("Act. Consumption (Qty)", "Reserved Qty. (Base)");
         if ProdOrderComponent."Act. Consumption (Qty)" <> 0 then
             Error(ComponentConsumedErr, ProdOrderComponent."Item No.");
-        if (ProdOrderComponent."Reserved Qty. (Base)" <> 0) and
-           HasUnsafeProdOrderComponentReservation(ProdOrderComponent)
-        then
-            Error(ComponentReservedErr, ProdOrderComponent."Item No.");
+        if ProdOrderComponent."Reserved Qty. (Base)" <> 0 then
+            if HasUnsafeProdOrderComponentReservation(ProdOrderComponent) then
+                Error(ComponentReservedErr, ProdOrderComponent."Item No.");
         if ProdOrderComponent."Qty. Picked (Base)" <> 0 then
             Error(ComponentPickedErr, ProdOrderComponent."Item No.");
     end;
@@ -6283,16 +6280,16 @@ codeunit 50178 "PNE PIL Mgt."
         if PNEPILTarget.FindSet() then
             repeat
                 if not (PNEPILTarget.Kind in [
-                        PNEPILTarget.Kind::"Direct component addition",
-                        PNEPILTarget.Kind::"Point carrier addition"]) and
-                   not HasEarlierQuantityTargetForCarrier(PNEPILTarget)
+                         PNEPILTarget.Kind::"Direct component addition",
+                         PNEPILTarget.Kind::"Point carrier addition"])
                 then
-                    case PNEPILTarget."Carrier Type" of
-                        PNEPILTarget."Carrier Type"::"Production Order Line":
-                            UpdateCarrierProductionOrderLine(PNEPILTarget);
-                        PNEPILTarget."Carrier Type"::"Production Order Component":
-                            UpdateCarrierProductionOrderComponent(PNEPILTarget);
-                    end;
+                    if not HasEarlierQuantityTargetForCarrier(PNEPILTarget) then
+                        case PNEPILTarget."Carrier Type" of
+                            PNEPILTarget."Carrier Type"::"Production Order Line":
+                                UpdateCarrierProductionOrderLine(PNEPILTarget);
+                            PNEPILTarget."Carrier Type"::"Production Order Component":
+                                UpdateCarrierProductionOrderComponent(PNEPILTarget);
+                        end;
             until PNEPILTarget.Next() = 0;
     end;
 
@@ -7008,14 +7005,13 @@ codeunit 50178 "PNE PIL Mgt."
         CandidateProdOrderLine.SetRange("Prod. Order No.", ProductionOrderNo);
         if CandidateProdOrderLine.FindSet() then
             repeat
-                if HasLiveProductionOrderRouting(CandidateProdOrderLine) and
-                   not IsInternallySuppliedProductionOrderLine(CandidateProdOrderLine)
-                then begin
-                    RoutingOwnerCount += 1;
-                    if RoutingOwnerCount > 1 then
-                        exit(false);
-                    OrderLevelRoutingOwnerProdOrderLine := CandidateProdOrderLine;
-                end;
+                if HasLiveProductionOrderRouting(CandidateProdOrderLine) then
+                    if not IsInternallySuppliedProductionOrderLine(CandidateProdOrderLine) then begin
+                        RoutingOwnerCount += 1;
+                        if RoutingOwnerCount > 1 then
+                            exit(false);
+                        OrderLevelRoutingOwnerProdOrderLine := CandidateProdOrderLine;
+                    end;
             until CandidateProdOrderLine.Next() = 0;
         exit(RoutingOwnerCount = 1);
     end;
@@ -7058,9 +7054,12 @@ codeunit 50178 "PNE PIL Mgt."
                     ProdOrderComponent,
                     TempComponentOwnerProdOrderLine,
                     ComponentOwnerProdOrderLine);
-                if (ProdOrderComponent."Routing Link Code" <> '') and
-                   IsNonInventoryItem(ProdOrderComponent."Item No.", NonInventoryItemCache) and
-                   IsCapacityUnitOfMeasureCached(ProdOrderComponent."Unit of Measure Code", CapacityUnitOfMeasureCache)
+                if IsRoutingHourSource(
+                     ProdOrderComponent."Item No.",
+                     ProdOrderComponent."Routing Link Code",
+                     ProdOrderComponent."Unit of Measure Code",
+                     NonInventoryItemCache,
+                     CapacityUnitOfMeasureCache)
                 then begin
                     CurrentTotal := GetDecimalDictionaryValue(
                         RoutingHourTotals,
@@ -7102,9 +7101,12 @@ codeunit 50178 "PNE PIL Mgt."
         ProdOrderComponent.SetRange("Prod. Order Line No.", CurrentProdOrderLine."Line No.");
         if ProdOrderComponent.FindSet() then
             repeat
-                if (ProdOrderComponent."Routing Link Code" <> '') and
-                   IsNonInventoryItem(ProdOrderComponent."Item No.", NonInventoryItemCache) and
-                   IsCapacityUnitOfMeasureCached(ProdOrderComponent."Unit of Measure Code", CapacityUnitOfMeasureCache)
+                if IsRoutingHourSource(
+                     ProdOrderComponent."Item No.",
+                     ProdOrderComponent."Routing Link Code",
+                     ProdOrderComponent."Unit of Measure Code",
+                     NonInventoryItemCache,
+                     CapacityUnitOfMeasureCache)
                 then begin
                     CurrentTotal := GetDecimalDictionaryValue(
                         RoutingHourTotals,
@@ -7321,22 +7323,25 @@ codeunit 50178 "PNE PIL Mgt."
                         ProductionBOMLine."No.");
 
                 ChildQuantityPerOutput := ParentQuantityPerOutput * ProductionBOMLine.Quantity;
-                if (ProductionBOMLine.Type = ProductionBOMLine.Type::Item) and
-                   (ProductionBOMLine."Routing Link Code" <> '') and
-                   IsNonInventoryItem(ProductionBOMLine."No.", NonInventoryItemCache) and
-                   IsCapacityUnitOfMeasureCached(ProductionBOMLine."Unit of Measure Code", CapacityUnitOfMeasureCache)
-                then begin
-                    CurrentTotal := GetDecimalDictionaryValue(
-                        RoutingHourTotals,
-                        ProductionBOMLine."Routing Link Code");
-                    SetDecimalDictionaryValue(
-                        RoutingHourTotals,
-                        ProductionBOMLine."Routing Link Code",
-                        CurrentTotal + ConvertCapacityQuantity(
-                            ChildQuantityPerOutput,
-                            ProductionBOMLine."Unit of Measure Code",
-                            CapacityUnitOfMeasureCode));
-                end;
+                if ProductionBOMLine.Type = ProductionBOMLine.Type::Item then
+                    if IsRoutingHourSource(
+                         ProductionBOMLine."No.",
+                         ProductionBOMLine."Routing Link Code",
+                         ProductionBOMLine."Unit of Measure Code",
+                         NonInventoryItemCache,
+                         CapacityUnitOfMeasureCache)
+                    then begin
+                        CurrentTotal := GetDecimalDictionaryValue(
+                            RoutingHourTotals,
+                            ProductionBOMLine."Routing Link Code");
+                        SetDecimalDictionaryValue(
+                            RoutingHourTotals,
+                            ProductionBOMLine."Routing Link Code",
+                            CurrentTotal + ConvertCapacityQuantity(
+                                ChildQuantityPerOutput,
+                                ProductionBOMLine."Unit of Measure Code",
+                                CapacityUnitOfMeasureCode));
+                    end;
 
                 ChildProductionBOMNo := GetChildProductionBOMNo(ProductionBOMLine);
                 if ChildProductionBOMNo <> '' then begin
@@ -7651,6 +7656,15 @@ codeunit 50178 "PNE PIL Mgt."
         exit(IsCapacityUnit);
     end;
 
+    local procedure IsRoutingHourSource(ItemNo: Code[20]; RoutingLinkCode: Code[10]; UnitOfMeasureCode: Code[10]; var NonInventoryItemCache: Dictionary of [Code[20], Boolean]; var CapacityUnitOfMeasureCache: Dictionary of [Code[10], Boolean]): Boolean
+    begin
+        if RoutingLinkCode = '' then
+            exit(false);
+        if not IsNonInventoryItem(ItemNo, NonInventoryItemCache) then
+            exit(false);
+        exit(IsCapacityUnitOfMeasureCached(UnitOfMeasureCode, CapacityUnitOfMeasureCache));
+    end;
+
     local procedure IsNonInventoryItem(ItemNo: Code[20]; var NonInventoryItemCache: Dictionary of [Code[20], Boolean]): Boolean
     var
         Item: Record Item;
@@ -7701,10 +7715,9 @@ codeunit 50178 "PNE PIL Mgt."
         PNEPILTarget.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
         if PNEPILTarget.FindSet() then
             repeat
-                if TargetChangesProductionOrder(PNEPILTarget) and
-                   not HasEarlierChangingTargetForCarrier(PNEPILTarget)
-                then
-                    CollectAffectedProductionOrderLines(PNEPILTarget, TempAffectedProdOrderLine);
+                if TargetChangesProductionOrder(PNEPILTarget) then
+                    if not HasEarlierChangingTargetForCarrier(PNEPILTarget) then
+                        CollectAffectedProductionOrderLines(PNEPILTarget, TempAffectedProdOrderLine);
             until PNEPILTarget.Next() = 0;
     end;
 

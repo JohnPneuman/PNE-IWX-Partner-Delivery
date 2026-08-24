@@ -10,6 +10,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
                   tabledata "Extended Text Line" = r,
                   tabledata Item = r,
                   tabledata "PNE PIL Change Line" = rimd,
+                  tabledata "PNE PIL Quote Resolution" = rimd,
                   tabledata "PNE PIL Quote Reversal" = rimd;
 
     procedure AddNetChangesToSelectedSalesQuote(var PNEPILHeader: Record "PNE PIL Header"; var SalesQuoteNo: Code[20]): Boolean
@@ -24,10 +25,9 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         CheckHeaderIsReadyForSalesQuote(PNEPILHeader);
         EnsureFreshTechnicalProposalForQuote(PNEPILHeader);
         CheckNoExistingSalesQuoteLinks(PNEPILHeader);
-        if (PNEPILHeader.Status = PNEPILHeader.Status::Prepared) and
-           not Confirm(PreparedQuoteHandoffQst, false)
-        then
-            exit(false);
+        if PNEPILHeader.Status = PNEPILHeader.Status::Prepared then
+            if not Confirm(PreparedQuoteHandoffQst, false) then
+                exit(false);
         GetNetChangeSummary(
             PNEPILHeader,
             MoreworkLineCount,
@@ -82,6 +82,63 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         ActiveChangeCount: Integer;
     begin
         exit(GetActiveQuoteHandoffSummary(PNEPILHeader, SalesQuoteNo, ActiveChangeCount));
+    end;
+
+    procedure HasCommerciallyLockedHandoff(PNEPILHeader: Record "PNE PIL Header"): Boolean
+    var
+        PNEPILChangeLine: Record "PNE PIL Change Line";
+    begin
+        SetCommerciallyLockedQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
+        exit(not PNEPILChangeLine.IsEmpty());
+    end;
+
+    procedure HasReleasedQuoteHandoff(PNEPILHeader: Record "PNE PIL Header"): Boolean
+    var
+        PNEPILChangeLine: Record "PNE PIL Change Line";
+    begin
+        PNEPILChangeLine.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
+        PNEPILChangeLine.SetRange("Quote Reversed", false);
+        PNEPILChangeLine.SetRange("Quote Link Released", true);
+        PNEPILChangeLine.SetFilter("Sales Quote No.", '<>%1', '');
+        exit(not PNEPILChangeLine.IsEmpty());
+    end;
+
+    procedure GetQuoteHandoffState(PNEPILHeader: Record "PNE PIL Header"; var ActiveQuoteHandoffFound: Boolean; var CommerciallyLockedHandoffFound: Boolean; var ReleasedQuoteHandoffFound: Boolean)
+    var
+        PNEPILChangeLine: Record "PNE PIL Change Line";
+    begin
+        Clear(ActiveQuoteHandoffFound);
+        Clear(CommerciallyLockedHandoffFound);
+        Clear(ReleasedQuoteHandoffFound);
+
+        SetCommerciallyLockedQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
+        PNEPILChangeLine.SetLoadFields("Quote Link Released");
+        if PNEPILChangeLine.FindSet(false) then
+            repeat
+                CommerciallyLockedHandoffFound := true;
+                if PNEPILChangeLine."Quote Link Released" then
+                    ReleasedQuoteHandoffFound := true
+                else
+                    ActiveQuoteHandoffFound := true;
+                if ActiveQuoteHandoffFound and ReleasedQuoteHandoffFound then
+                    exit;
+            until PNEPILChangeLine.Next() = 0;
+    end;
+
+    procedure ReleaseActiveQuoteHandoff(var PNEPILHeader: Record "PNE PIL Header"; ResolutionReason: Text[250]): Boolean
+    var
+        SalesQuoteNo: Code[20];
+        ActiveChangeCount: Integer;
+    begin
+        CheckResolutionReason(ResolutionReason);
+        CheckHeaderCanReleaseSalesQuote(PNEPILHeader);
+        if not GetActiveQuoteHandoffSummary(PNEPILHeader, SalesQuoteNo, ActiveChangeCount) then
+            exit(false);
+        if not Confirm(ReleaseQuoteLinkQst, false, ActiveChangeCount, SalesQuoteNo) then
+            exit(false);
+
+        ReleaseActiveQuoteHandoffWithAudit(PNEPILHeader, ResolutionReason);
+        exit(true);
     end;
 
     procedure GetQuotableNetChangeCount(PNEPILHeader: Record "PNE PIL Header"): Integer
@@ -181,6 +238,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         Clear(QuoteItemLineIsCurrent);
         Clear(QuoteTextIsCurrent);
         if PNEPILChangeLine."Quote Reversed" or
+           PNEPILChangeLine."Quote Link Released" or
            (PNEPILChangeLine."Sales Quote No." = '') or
            (PNEPILChangeLine."Sales Quote Line No." = 0)
         then
@@ -204,6 +262,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         SalesLine: Record "Sales Line";
     begin
         if PNEPILChangeLine."Quote Reversed" or
+           PNEPILChangeLine."Quote Link Released" or
            (PNEPILChangeLine."Sales Quote No." = '') or
            (PNEPILChangeLine."Sales Quote Line No." = 0)
         then
@@ -328,6 +387,8 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
                     PNEPILChangeLine."Quote Line Description" := NewSalesLine.Description;
                     PNEPILChangeLine."Quote Reversed" := false;
                     PNEPILChangeLine."Quote Reversal Entry No." := 0;
+                    PNEPILChangeLine."Quote Link Released" := false;
+                    PNEPILChangeLine."Quote Resolution Entry No." := 0;
                     PNEPILChangeLine.Modify(true);
                 end;
             until PNEPILChangeLine.Next() = 0;
@@ -406,6 +467,91 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         PNEPILQuoteReversal.Insert(true);
     end;
 
+    local procedure ReleaseActiveQuoteHandoffWithAudit(var PNEPILHeader: Record "PNE PIL Header"; ResolutionReason: Text[250])
+    var
+        PNEPILChangeLine: Record "PNE PIL Change Line";
+        PNEPILQuoteResolution: Record "PNE PIL Quote Resolution";
+        ResolvedAt: DateTime;
+        ResolvedBy: Text[50];
+    begin
+        PNEPILHeader.LockTable();
+        PNEPILChangeLine.LockTable();
+        PNEPILQuoteResolution.LockTable();
+
+        PNEPILHeader.Get(PNEPILHeader."Entry No.");
+        CheckHeaderCanReleaseSalesQuote(PNEPILHeader);
+        SetActiveQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
+        if PNEPILChangeLine.IsEmpty() then
+            Error(NoActiveQuoteHandoffErr, PNEPILHeader."Entry No.");
+        ResolvedAt := CurrentDateTime();
+        ResolvedBy := CopyStr(UserId(), 1, MaxStrLen(ResolvedBy));
+        if PNEPILChangeLine.FindSet(true) then
+            repeat
+                CreateQuoteResolutionAudit(
+                    PNEPILQuoteResolution,
+                    PNEPILChangeLine,
+                    ResolutionReason,
+                    ResolvedAt,
+                    ResolvedBy);
+                PNEPILChangeLine."Quote Link Released" := true;
+                PNEPILChangeLine."Quote Resolution Entry No." := PNEPILQuoteResolution."Entry No.";
+                PNEPILChangeLine.Modify(true);
+            until PNEPILChangeLine.Next() = 0;
+    end;
+
+    local procedure CreateQuoteResolutionAudit(var PNEPILQuoteResolution: Record "PNE PIL Quote Resolution"; PNEPILChangeLine: Record "PNE PIL Change Line"; ResolutionReason: Text[250]; ResolvedAt: DateTime; ResolvedBy: Text[50])
+    begin
+        PNEPILQuoteResolution.Init();
+        PNEPILQuoteResolution."Header Entry No." := PNEPILChangeLine."Header Entry No.";
+        PNEPILQuoteResolution."Change Line No." := PNEPILChangeLine."Line No.";
+        PNEPILQuoteResolution."Sales Quote No." := PNEPILChangeLine."Sales Quote No.";
+        PNEPILQuoteResolution."Sales Quote Line No." := PNEPILChangeLine."Sales Quote Line No.";
+        PNEPILQuoteResolution."Sales Quote Line SystemId" := PNEPILChangeLine."Sales Quote Line SystemId";
+        PNEPILQuoteResolution."Sales Quote Line Modified At" := PNEPILChangeLine."Sales Quote Line Modified At";
+        PNEPILQuoteResolution."Carrier Item No." := PNEPILChangeLine."Carrier Item No.";
+        PNEPILQuoteResolution."Carrier Variant Code" := PNEPILChangeLine."Carrier Variant Code";
+        PNEPILQuoteResolution."Unit of Measure Code" := PNEPILChangeLine."Unit of Measure Code";
+        PNEPILQuoteResolution.Quantity := PNEPILChangeLine."Quantity Difference";
+        PNEPILQuoteResolution."Quote Line Description" := PNEPILChangeLine."Quote Line Description";
+        PNEPILQuoteResolution."Quote Unit Price" := PNEPILChangeLine."Quote Unit Price";
+        PNEPILQuoteResolution."Quote Line Amount" := PNEPILChangeLine."Quote Line Amount";
+        PNEPILQuoteResolution."Quote Currency Code" := PNEPILChangeLine."Quote Currency Code";
+        PNEPILQuoteResolution."Observed Link State" := GetObservedQuoteLinkState(PNEPILChangeLine);
+        PNEPILQuoteResolution."Resolution Reason" := ResolutionReason;
+        PNEPILQuoteResolution."Resolved At" := ResolvedAt;
+        PNEPILQuoteResolution."Resolved By" := ResolvedBy;
+        PNEPILQuoteResolution.Insert(true);
+    end;
+
+    local procedure GetObservedQuoteLinkState(PNEPILChangeLine: Record "PNE PIL Change Line"): Enum "PNE PIL Quote Link State"
+    var
+        QuoteLinkState: Enum "PNE PIL Quote Link State";
+    begin
+        if not TryDetermineQuoteLinkState(PNEPILChangeLine, QuoteLinkState) then
+            exit(QuoteLinkState::"Cannot Verify");
+        exit(QuoteLinkState);
+    end;
+
+    local procedure DetermineQuoteLinkState(PNEPILChangeLine: Record "PNE PIL Change Line"): Enum "PNE PIL Quote Link State"
+    var
+        SalesHeader: Record "Sales Header";
+        SalesLine: Record "Sales Line";
+    begin
+        if not SalesHeader.Get(SalesHeader."Document Type"::Quote, PNEPILChangeLine."Sales Quote No.") then
+            exit("PNE PIL Quote Link State"::"Quote Missing");
+        if not SalesLine.Get(
+            SalesLine."Document Type"::Quote,
+            PNEPILChangeLine."Sales Quote No.",
+            PNEPILChangeLine."Sales Quote Line No.")
+        then
+            exit("PNE PIL Quote Link State"::"Quote Line Missing");
+        if not IsMatchingSalesQuoteItemLine(PNEPILChangeLine, SalesHeader, SalesLine) then
+            exit("PNE PIL Quote Link State"::"Item Line Changed");
+        if not HasExpectedSalesQuoteExtendedText(SalesHeader, SalesLine) then
+            exit("PNE PIL Quote Link State"::"Text Changed");
+        exit("PNE PIL Quote Link State"::Current);
+    end;
+
     local procedure CheckHeaderIsReadyForSalesQuote(PNEPILHeader: Record "PNE PIL Header")
     begin
         if not (PNEPILHeader.Status in [PNEPILHeader.Status::Prepared, PNEPILHeader.Status::Applied]) then
@@ -420,6 +566,12 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
             Error(ProposalNotReadyForReversalErr, PNEPILHeader."Entry No.");
     end;
 
+    local procedure CheckHeaderCanReleaseSalesQuote(PNEPILHeader: Record "PNE PIL Header")
+    begin
+        if not (PNEPILHeader.Status in [PNEPILHeader.Status::Prepared, PNEPILHeader.Status::Applied]) then
+            Error(ProposalNotReadyForReleaseErr, PNEPILHeader."Entry No.");
+    end;
+
     local procedure EnsureFreshTechnicalProposalForQuote(var PNEPILHeader: Record "PNE PIL Header")
     var
         PNEPILMgt: Codeunit "PNE PIL Mgt.";
@@ -432,11 +584,9 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     var
         PNEPILChangeLine: Record "PNE PIL Change Line";
     begin
-        SetActiveQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
-        if not PNEPILChangeLine.IsEmpty() then begin
-            EnsureActiveQuoteItemLinksCurrent(PNEPILHeader);
+        SetCommerciallyLockedQuoteLinkFilter(PNEPILChangeLine, PNEPILHeader);
+        if not PNEPILChangeLine.IsEmpty() then
             Error(AlreadyAddedToQuoteErr, PNEPILHeader."Entry No.");
-        end;
     end;
 
     local procedure CheckOpenSalesQuote(SalesHeader: Record "Sales Header")
@@ -452,6 +602,12 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     begin
         if DelChr(ReversalReason, '=', ' ') = '' then
             Error(ReversalReasonRequiredErr);
+    end;
+
+    local procedure CheckResolutionReason(ResolutionReason: Text[250])
+    begin
+        if DelChr(ResolutionReason, '=', ' ') = '' then
+            Error(ResolutionReasonRequiredErr);
     end;
 
     local procedure GetActiveQuoteHandoffSummary(PNEPILHeader: Record "PNE PIL Header"; var SalesQuoteNo: Code[20]; var ActiveChangeCount: Integer): Boolean
@@ -785,6 +941,15 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         PNEPILChangeLine.Reset();
         PNEPILChangeLine.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
         PNEPILChangeLine.SetRange("Quote Reversed", false);
+        PNEPILChangeLine.SetRange("Quote Link Released", false);
+        PNEPILChangeLine.SetFilter("Sales Quote No.", '<>%1', '');
+    end;
+
+    local procedure SetCommerciallyLockedQuoteLinkFilter(var PNEPILChangeLine: Record "PNE PIL Change Line"; PNEPILHeader: Record "PNE PIL Header")
+    begin
+        PNEPILChangeLine.Reset();
+        PNEPILChangeLine.SetRange("Header Entry No.", PNEPILHeader."Entry No.");
+        PNEPILChangeLine.SetRange("Quote Reversed", false);
         PNEPILChangeLine.SetFilter("Sales Quote No.", '<>%1', '');
     end;
 
@@ -812,6 +977,12 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
     end;
 
     [TryFunction]
+    local procedure TryDetermineQuoteLinkState(PNEPILChangeLine: Record "PNE PIL Change Line"; var QuoteLinkState: Enum "PNE PIL Quote Link State")
+    begin
+        QuoteLinkState := DetermineQuoteLinkState(PNEPILChangeLine);
+    end;
+
+    [TryFunction]
     local procedure TryOpenSalesQuote(SalesQuoteNo: Code[20])
     var
         SalesHeader: Record "Sales Header";
@@ -827,7 +998,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
 
     var
         AddNetToQuoteQst: Label 'Voeg het netto verschil toe aan offerte %1?\Meerwerk: %2 samengevoegde regel(s), totaal +%3.\Minderwerk: %4 samengevoegde regel(s), totaal -%5.\De netto technische kostenindicatie is %6. De app groepeert op artikel, variant en eenheid, maakt alleen nieuwe gewone artikelregels en wijzigt geen bestaande offerte- of configuratorregel. Geldige automatische artikelteksten voor Sales Quote worden met het netto aantal onder de nieuwe regel gezet.', Comment = '%1 = sales quote number, %2 = morework line count, %3 = total morework quantity, %4 = lesswork line count, %5 = total lesswork quantity, %6 = net technical cost indication';
-        AlreadyAddedToQuoteErr: Label 'PIL-import %1 heeft al actieve regels op een offerte. Controleer die offerte of draai eerst de overdracht terug; dubbele regels worden niet toegevoegd.', Comment = '%1 = import entry number';
+        AlreadyAddedToQuoteErr: Label 'PIL-import %1 is al commercieel overgedragen of handmatig vrijgegeven. Controleer het auditdossier; dezelfde wijziging wordt niet nogmaals aan een offerte toegevoegd.', Comment = '%1 = import entry number';
         AppliedProposalCannotReverseErr: Label 'PIL-import %1 is al toegepast op de productieorder. De offerte-overdracht kan niet meer automatisch worden teruggedraaid; beoordeel de offerte handmatig.', Comment = '%1 = import entry number';
         MultipleActiveSalesQuotesErr: Label 'PIL-import %1 heeft actieve koppelingen met meer dan één offerte en kan niet automatisch worden teruggedraaid.', Comment = '%1 = import entry number';
         NoActiveQuoteHandoffErr: Label 'PIL-import %1 heeft geen actieve offerte-overdracht om terug te draaien.', Comment = '%1 = import entry number';
@@ -835,6 +1006,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         OpenSalesQuoteErr: Label 'Offerte %1 kan met de huidige rechten niet worden geopend. Open de offerte via uw normale offertetoegang.', Comment = '%1 = sales quote number';
         PreparedQuoteHandoffQst: Label 'Deze PIL is technisch gecontroleerd, maar nog niet op de productieorder toegepast. De veiligste volgorde is eerst ''Pas veilig toe'' en daarna de offerte-overdracht. Tot Apply mag de aangemaakte offertregel niet worden gewijzigd, ook niet de prijs, en de offerte mag niet worden verwijderd of naar een order worden omgezet. Anders kan de koppeling niet meer automatisch worden gecontroleerd. Toch nu naar de offerte overdragen?';
         ProposalNotReadyErr: Label 'PIL-import %1 moet eerst klaar zijn voor toepassen voordat deze aan een offerte kan worden toegevoegd.', Comment = '%1 = import entry number';
+        ProposalNotReadyForReleaseErr: Label 'PIL-import %1 moet gereed om toe te passen of al toegepast zijn voordat de commerciële koppeling kan worden vrijgegeven.', Comment = '%1 = import entry number';
         ProposalNotReadyForReversalErr: Label 'PIL-import %1 moet klaar zijn voor toepassen en nog niet zijn toegepast voordat de offerte-overdracht kan worden teruggedraaid.', Comment = '%1 = import entry number';
         QuantityPrefixLbl: Label '%1x ', Comment = '%1 = positive net item quantity';
         LessworkQuantityPrefixLbl: Label 'Minderwerk: %1x ', Comment = '%1 = absolute negative net item quantity';
@@ -845,5 +1017,7 @@ codeunit 50197 "PNE PIL Sales Quote Mgt."
         QuotedTextChangedErr: Label 'De gekoppelde artikeltekst onder offerte %1, regel %2 is gewijzigd of volgt inmiddels een andere tekstinrichting. Technische Apply blijft mogelijk zolang de artikelregel zelf ongewijzigd is. Automatisch terugdraaien is geblokkeerd; beoordeel en corrigeer de offerte handmatig.', Comment = '%1 = sales quote number, %2 = sales quote line number';
         QuotedLineMissingErr: Label 'Offerte %1, regel %2 die aan dit PIL-voorstel is gekoppeld, bestaat niet meer.', Comment = '%1 = sales quote number, %2 = sales quote line number';
         ReversalReasonRequiredErr: Label 'Vul een reden in voordat u de offerte-overdracht terugdraait.';
+        ReleaseQuoteLinkQst: Label 'Geef de commerciële koppeling van %1 technische regel(s) met offerte %2 vrij? De app wijzigt of verwijdert niets in verkoop. De reden en aangetroffen toestand worden blijvend vastgelegd. Deze PIL kan daarna niet nogmaals automatisch naar een offerte worden gestuurd.', Comment = '%1 = active PIL change line count, %2 = sales quote number';
+        ResolutionReasonRequiredErr: Label 'Vul een reden in voordat u de commerciële koppeling vrijgeeft.';
         ReverseQuoteQst: Label 'Draai %1 door dit PIL-dossier aangemaakte artikelregel(s) op offerte %2 terug? Alleen ongewijzigde regels die deze app zelf heeft toegevoegd, worden verwijderd. De opgegeven reden blijft in de audit bewaard.', Comment = '%1 = active PIL change line count, %2 = sales quote number';
 }

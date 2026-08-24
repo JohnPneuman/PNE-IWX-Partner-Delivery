@@ -86,10 +86,11 @@ codeunit 50177 "PNE PIL Import"
                     PNEPILGroupItem.SetRange(Enabled, true);
                     if PNEPILGroupItem.FindSet() then
                         repeat
-                            if PNEPILGroup.Get(PNEPILGroupItem."Group Code") and PNEPILGroup.Enabled then begin
-                                EnabledGroupCount += 1;
-                                GroupCode := PNEPILGroupItem."Group Code";
-                            end;
+                            if PNEPILGroup.Get(PNEPILGroupItem."Group Code") then
+                                if PNEPILGroup.Enabled then begin
+                                    EnabledGroupCount += 1;
+                                    GroupCode := PNEPILGroupItem."Group Code";
+                                end;
                         until PNEPILGroupItem.Next() = 0;
                     if EnabledGroupCount > 1 then
                         Error(AmbiguousGroupErr, ItemNo);

@@ -1,4 +1,4 @@
-# Production Order Reconciliation 2.7
+# Production Order Reconciliation 2.8
 
 ## Doel en afbakening
 
@@ -421,6 +421,23 @@ gewijzigde gekoppelde tekstregel maakt de commerciële koppeling
 beoordelingsplichtig en blokkeert automatisch terugdraaien. Technische Apply
 verifieert de onveranderde artikelregel en technische snapshot, maar wordt niet
 meer door een losse tekst- of tekststamwijziging geblokkeerd.
+
+Versie 2.8.0.1 voegt een duurzame herstelroute toe voor de situatie waarin de
+oorspronkelijk gekoppelde offerte of offertregel vóór technische Apply is
+gewijzigd, verwijderd, omgezet of door de huidige gebruiker niet kan worden
+geverifieerd. **Commerciële koppeling vrijgeven** vraagt altijd om een reden en
+maakt per technische voorstelregel een onveranderbare audit met de
+oorspronkelijke offerte-/artikel-/aantal-/prijs-/tekstsnapshot, de aangetroffen
+koppelingstoestand, gebruiker en datum/tijd. De actie schrijft niet naar Sales
+Header, Sales Line, vervolgorder of factuur.
+
+Een vrijgegeven koppeling blijft commercieel vergrendeld: het voorstel kan niet
+worden herverdeeld, opnieuw geanalyseerd of nogmaals automatisch naar een
+offerte worden gestuurd. Apply slaat alleen de onmogelijke live
+offertecontrole over. Carrier-, BOM-, bron-, routing-, reserverings-,
+verbruiks-, pick-, journaal- en stale-snapshotcontroles blijven volledig van
+kracht. Het Word-wijzigingsvoorstel toont de vrijgave in een aparte
+auditsectie.
 
 Voor een live productiecomponent of productieregel volgt de analyse eerst de
 locatie-/variantafhankelijke Stockkeeping Unit. Een niet-lege SKU **Production

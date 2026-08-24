@@ -43,6 +43,7 @@ report 50196 "PNE PIL Change Proposal"
             column(CommercialChangeLineCount; CommercialChangeLineCount) { }
             column(UnquotedCommercialChangeLineCount; UnquotedCommercialChangeLineCount) { }
             column(ReversedQuoteLineCount; ReversedQuoteLineCount) { }
+            column(ReleasedQuoteLineCount; ReleasedQuoteLineCount) { }
             column(TotalEstimatedCostDifference; TotalEstimatedCostDifference) { }
             column(QuoteSummary; QuoteSummaryText) { }
 
@@ -80,6 +81,8 @@ report 50196 "PNE PIL Change Proposal"
                 column(ChangeQuoteLineDescription; "Quote Line Description") { }
                 column(ChangeQuoteReversed; "Quote Reversed") { }
                 column(ChangeQuoteReversalEntryNo; "Quote Reversal Entry No.") { }
+                column(ChangeQuoteLinkReleased; "Quote Link Released") { }
+                column(ChangeQuoteResolutionEntryNo; "Quote Resolution Entry No.") { }
                 column(ChangeCommercialStatus; ChangeCommercialStatusText) { }
 
                 trigger OnAfterGetRecord()
@@ -179,6 +182,30 @@ report 50196 "PNE PIL Change Proposal"
                 column(ReversedAt; "Reversed At") { }
                 column(ReversedBy; "Reversed By") { }
             }
+            dataitem(PNEPILQuoteResolution; "PNE PIL Quote Resolution")
+            {
+                DataItemLink = "Header Entry No." = field("Entry No.");
+                DataItemTableView = sorting("Entry No.");
+
+                column(ResolutionEntryNo; "Entry No.") { }
+                column(ResolutionChangeLineNo; "Change Line No.") { }
+                column(ResolutionSalesQuoteNo; "Sales Quote No.") { }
+                column(ResolutionSalesQuoteLineNo; "Sales Quote Line No.") { }
+                column(ResolutionSalesQuoteLineSystemId; "Sales Quote Line SystemId") { }
+                column(ResolutionSalesQuoteLineModifiedAt; "Sales Quote Line Modified At") { }
+                column(ResolutionCarrierItemNo; "Carrier Item No.") { }
+                column(ResolutionCarrierVariantCode; "Carrier Variant Code") { }
+                column(ResolutionUnitOfMeasureCode; "Unit of Measure Code") { }
+                column(ResolutionQuantity; Quantity) { }
+                column(ResolutionQuoteLineDescription; "Quote Line Description") { }
+                column(ResolutionQuoteUnitPrice; "Quote Unit Price") { }
+                column(ResolutionQuoteLineAmount; "Quote Line Amount") { }
+                column(ResolutionQuoteCurrencyCode; "Quote Currency Code") { }
+                column(ResolutionObservedLinkState; "Observed Link State") { }
+                column(ResolutionReason; "Resolution Reason") { }
+                column(ResolvedAt; "Resolved At") { }
+                column(ResolvedBy; "Resolved By") { }
+            }
 
             trigger OnAfterGetRecord()
             begin
@@ -216,6 +243,7 @@ report 50196 "PNE PIL Change Proposal"
         PNEPILLine: Record "PNE PIL Line";
         PNEPILSalesQuoteMgt: Codeunit "PNE PIL Sales Quote Mgt.";
         CurrentQuoteLineKeys: Dictionary of [Text, Boolean];
+        ReleasedQuoteLineKeys: Dictionary of [Text, Boolean];
         ReversedQuoteLineKeys: Dictionary of [Text, Boolean];
         QuoteLineKey: Text;
         QuoteLineIsCurrent: Boolean;
@@ -231,6 +259,7 @@ report 50196 "PNE PIL Change Proposal"
         Clear(CommercialChangeLineCount);
         Clear(UnquotedCommercialChangeLineCount);
         Clear(ReversedQuoteLineCount);
+        Clear(ReleasedQuoteLineCount);
         Clear(TotalEstimatedCostDifference);
         Clear(QuoteSummaryText);
         Clear(QuoteLinkCurrentCache);
@@ -266,6 +295,11 @@ report 50196 "PNE PIL Change Proposal"
                         if PNEPILChangeLine."Quantity Difference" > 0 then
                             UnquotedPositiveChangeLineCount += 1;
                     end else
+                        if PNEPILChangeLine."Quote Link Released" then begin
+                            QuoteLineKey := GetQuoteLineKey(PNEPILChangeLine);
+                            if not ReleasedQuoteLineKeys.ContainsKey(QuoteLineKey) then
+                                ReleasedQuoteLineKeys.Add(QuoteLineKey, true);
+                        end else
                         if GetCachedQuoteLineStatus(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent) then begin
                             if QuoteLineIsCurrent then begin
                                 QuoteLineKey := GetQuoteLineKey(PNEPILChangeLine);
@@ -282,13 +316,14 @@ report 50196 "PNE PIL Change Proposal"
             until PNEPILChangeLine.Next() = 0;
 
         CommercialChangeLineCount := PNEPILSalesQuoteMgt.GetQuotableNetChangeCount(PNEPILHeader);
-        UnquotedCommercialChangeLineCount := CommercialChangeLineCount - CurrentQuoteLineKeys.Count();
+        UnquotedCommercialChangeLineCount := CommercialChangeLineCount - CurrentQuoteLineKeys.Count() - ReleasedQuoteLineKeys.Count();
         if UnquotedCommercialChangeLineCount < 0 then
             UnquotedCommercialChangeLineCount := 0;
         ReversedQuoteLineCount := ReversedQuoteLineKeys.Count();
+        ReleasedQuoteLineCount := ReleasedQuoteLineKeys.Count();
         TechnicalReviewStatusText := GetTechnicalReviewStatus(PNEPILHeader);
-        CommercialReviewStatusText := GetCommercialReviewStatus(CommercialChangeLineCount, UnquotedCommercialChangeLineCount, ReversedQuoteLineCount);
-        QuoteSummaryText := GetQuoteSummary(QuoteCount, CommercialChangeLineCount, UnquotedCommercialChangeLineCount, ReversedQuoteLineCount);
+        CommercialReviewStatusText := GetCommercialReviewStatus(CommercialChangeLineCount, UnquotedCommercialChangeLineCount, ReversedQuoteLineCount, ReleasedQuoteLineCount);
+        QuoteSummaryText := GetQuoteSummary(QuoteCount, CommercialChangeLineCount, UnquotedCommercialChangeLineCount, ReversedQuoteLineCount, ReleasedQuoteLineCount);
     end;
 
     local procedure GetTechnicalReviewStatus(PNEPILHeader: Record "PNE PIL Header"): Text[100]
@@ -305,10 +340,12 @@ report 50196 "PNE PIL Change Proposal"
         end;
     end;
 
-    local procedure GetCommercialReviewStatus(CommercialLineCount: Integer; UnquotedCommercialLineCount: Integer; ReversedLineCount: Integer): Text[100]
+    local procedure GetCommercialReviewStatus(CommercialLineCount: Integer; UnquotedCommercialLineCount: Integer; ReversedLineCount: Integer; ReleasedLineCount: Integer): Text[100]
     begin
         if CommercialLineCount = 0 then
             exit(NoCommercialChangeTxt);
+        if ReleasedLineCount > 0 then
+            exit(ReleasedQuoteReviewTxt);
         if ReversedLineCount > 0 then
             exit(ReversedQuoteReviewTxt);
         if UnquotedCommercialLineCount = 0 then
@@ -318,10 +355,12 @@ report 50196 "PNE PIL Change Proposal"
         exit(SomeCommercialChangesUnquotedTxt);
     end;
 
-    local procedure GetQuoteSummary(QuoteCount: Integer; CommercialLineCount: Integer; UnquotedCommercialLineCount: Integer; ReversedLineCount: Integer): Text[100]
+    local procedure GetQuoteSummary(QuoteCount: Integer; CommercialLineCount: Integer; UnquotedCommercialLineCount: Integer; ReversedLineCount: Integer; ReleasedLineCount: Integer): Text[100]
     begin
         if CommercialLineCount = 0 then
             exit(NoQuoteRequiredTxt);
+        if ReleasedLineCount > 0 then
+            exit(CopyStr(StrSubstNo(ReleasedQuoteLinesTxt, ReleasedLineCount, UnquotedCommercialLineCount), 1, 100));
         if ReversedLineCount > 0 then
             exit(CopyStr(StrSubstNo(ReversedQuoteLinesTxt, ReversedLineCount, UnquotedCommercialLineCount), 1, 100));
         if QuoteCount = 0 then
@@ -344,6 +383,8 @@ report 50196 "PNE PIL Change Proposal"
             exit(NetCommercialGroupZeroTxt);
         if PNEPILChangeLine."Quote Reversed" then
             exit(QuoteReversedTxt);
+        if PNEPILChangeLine."Quote Link Released" then
+            exit(StrSubstNo(QuoteReleasedTxt, PNEPILChangeLine."Quote Resolution Entry No."));
         if PNEPILChangeLine."Sales Quote No." = '' then
             exit(NotAddedToQuoteTxt);
         if not GetCachedQuoteLineStatus(PNEPILSalesQuoteMgt, PNEPILChangeLine, QuoteLineIsCurrent) then
@@ -449,6 +490,7 @@ report 50196 "PNE PIL Change Proposal"
         CoveredPILItemCount: Integer;
         PositiveChangeLineCount: Integer;
         ReversedQuoteLineCount: Integer;
+        ReleasedQuoteLineCount: Integer;
         TotalPILItemCount: Integer;
         UnquotedCommercialChangeLineCount: Integer;
         UnquotedPositiveChangeLineCount: Integer;
@@ -476,6 +518,9 @@ report 50196 "PNE PIL Change Proposal"
         QuoteLinkNeedsReviewTxt: Label 'Offertekoppeling controleren: artikelregel of gekoppelde artikeltekst wijkt af van dit voorstel.';
         QuoteLinkCannotBeVerifiedTxt: Label 'Offertekoppeling kan met de huidige rechten niet worden gecontroleerd.';
         QuoteReversedTxt: Label 'Offerte-overdracht is teruggedraaid; kies zo nodig opnieuw een offerte.';
+        QuoteReleasedTxt: Label 'Commercieel handmatig vrijgegeven onder auditnummer %1; verkoop is niet automatisch gewijzigd.', Comment = '%1 = commercial quote resolution audit entry number';
+        ReleasedQuoteLinesTxt: Label '%1 nettoregel(s) handmatig commercieel vrijgegeven; %2 regel(s) vragen nog beoordeling.', Comment = '%1 = released net quote line count, %2 = remaining unquoted commercial line count';
+        ReleasedQuoteReviewTxt: Label 'Minstens één offerte-koppeling is handmatig commercieel vrijgegeven; zie de blijvende audit.';
         ReversedQuoteLinesTxt: Label '%1 offertregel(s) teruggedraaid; %2 technische regel(s) vragen commerciële beoordeling.', Comment = '%1 = reversed quote line count, %2 = technical change line count requiring commercial review';
         ReversedQuoteReviewTxt: Label 'Minstens één offerte-overdracht is teruggedraaid; kies opnieuw een offerte of beoordeel commercieel.';
         QuotedAndUnquotedLinesTxt: Label '%1 nettoregel(s) gekoppeld; %2 technische regel(s) vragen commerciële beoordeling.', Comment = '%1 = net quote line count linked to a current sales quote, %2 = technical change line count needing commercial review';

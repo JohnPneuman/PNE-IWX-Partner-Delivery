@@ -131,9 +131,9 @@ number blocks safely for engineering review.
 Required dependencies:
 
 - Insight Works Product Configurator 4.1.9649.1;
-- Blue Ace Pneuman 1.0.202606.5.
+- BluAce Pneuman 1.0.202608.1.
 
-The app identity is `b4514682-8029-4a3d-ad9d-e887cdf51b0f`, version `1.0.0.8`;
+The app identity is `b4514682-8029-4a3d-ad9d-e887cdf51b0f`, version `1.0.0.10`;
 the required Business Central application is 28.0 and runtime is 17.0. Verify
 the exact dependency app IDs and public symbol assumptions in
 `../../docs/dependencies.md` before compiling against an upgraded dependency.

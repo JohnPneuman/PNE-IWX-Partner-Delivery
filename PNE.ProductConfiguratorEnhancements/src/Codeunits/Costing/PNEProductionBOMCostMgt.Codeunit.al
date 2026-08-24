@@ -51,9 +51,7 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
         // Beveiliging tegen een circulaire BOM:
         // BOM-A bevat BOM-B en BOM-B bevat weer BOM-A.
         if BOMPath.Contains(ProductionBOMNo) then
-            Error(
-                'Circulaire Production BOM gevonden bij %1.',
-                ProductionBOMNo);
+            Error(CircularProductionBOMErr, ProductionBOMNo);
 
         if not ProductionBOMHeader.Get(ProductionBOMNo) then
             exit(0);
@@ -214,4 +212,5 @@ codeunit 50104 "PNE Production BOM Cost Mgt."
     var
         BOMDepthErr: Label 'Production BOM %1 is nested more than %2 levels. The non-inventory cost calculation stops to protect against a corrupt BOM tree.', Comment = '%1=production BOM no.;%2=maximum depth';
         BOMNodeLimitErr: Label 'The Production BOM tree contains more than %1 rows. The non-inventory cost calculation stops to protect performance.', Comment = '%1=maximum node count';
+        CircularProductionBOMErr: Label 'Circulaire Production BOM gevonden bij %1.', Comment = '%1 = production BOM number';
 }

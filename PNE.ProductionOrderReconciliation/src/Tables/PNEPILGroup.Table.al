@@ -105,11 +105,12 @@ table 50170 "PNE PIL Group"
             OtherPNEPILGroupItem.SetFilter("Group Code", '<>%1', Code);
             if OtherPNEPILGroupItem.FindSet() then
                 repeat
-                    if OtherPNEPILGroup.Get(OtherPNEPILGroupItem."Group Code") and OtherPNEPILGroup.Enabled then
-                        Error(
-                            DuplicateEnabledGroupItemErr,
-                            PNEPILGroupItem."Item No.",
-                            OtherPNEPILGroupItem."Group Code");
+                    if OtherPNEPILGroup.Get(OtherPNEPILGroupItem."Group Code") then
+                        if OtherPNEPILGroup.Enabled then
+                            Error(
+                                DuplicateEnabledGroupItemErr,
+                                PNEPILGroupItem."Item No.",
+                                OtherPNEPILGroupItem."Group Code");
                 until OtherPNEPILGroupItem.Next() = 0;
         until PNEPILGroupItem.Next() = 0;
     end;
